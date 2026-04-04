@@ -409,6 +409,97 @@
     }
     .btn-delete-event:hover { background: #f0d5d5; color: #8b2020; }
 
+    /* ── Sync indicator ── */
+    .sync-bar {
+      display: none; align-items: center; gap: 8px;
+      margin-top: 6px; font-size: 0.78rem; color: var(--text-muted);
+    }
+    .sync-bar.visible { display: flex; }
+    .sync-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent); flex-shrink: 0;
+      animation: syncpulse 2.5s ease-in-out infinite;
+    }
+    @keyframes syncpulse { 0%,100%{opacity:.25} 50%{opacity:1} }
+    .sync-dot.spinning {
+      background: transparent;
+      border: 2px solid var(--accent); border-top-color: transparent;
+      animation: spin .7s linear infinite;
+    }
+
+    /* ── Header actions group ── */
+    .header-actions { display: flex; align-items: center; gap: 10px; }
+
+    /* ── Bouton sélecteur d'agendas ── */
+    .btn-agendas {
+      display: none; align-items: center; gap: 8px;
+      padding: 11px 18px; border-radius: 50px;
+      background: var(--surface); border: 1.5px solid var(--border);
+      color: var(--text); cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500;
+      transition: all .2s; box-shadow: var(--shadow);
+      position: relative;
+    }
+    .btn-agendas.visible { display: flex; }
+    .btn-agendas:hover { border-color: var(--accent); color: var(--accent); }
+    .agenda-badge {
+      background: var(--accent); color: var(--today-fg);
+      font-size: 0.68rem; font-weight: 700; min-width: 18px; height: 18px;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      padding: 0 4px;
+    }
+
+    /* ── Dropdown agendas ── */
+    .agenda-dropdown {
+      position: absolute; top: calc(100% + 10px); right: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow-lg);
+      padding: 10px; min-width: 300px; z-index: 300; display: none;
+    }
+    .agenda-dropdown.open { display: block; }
+    .agenda-dropdown-title {
+      font-size: 0.73rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--text-muted);
+      padding: 4px 8px 10px; border-bottom: 1px solid var(--border); margin-bottom: 6px;
+    }
+    .agenda-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: var(--radius-sm);
+      cursor: pointer; transition: background .15s; user-select: none;
+    }
+    .agenda-item:hover { background: var(--surface2); }
+    .agenda-check {
+      width: 18px; height: 18px; border-radius: 5px;
+      border: 2.5px solid; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.68rem; font-weight: 700; transition: all .15s;
+    }
+    .agenda-info { flex: 1; min-width: 0; }
+    .agenda-name { font-size: 0.87rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .agenda-primary { font-size: 0.71rem; color: var(--text-muted); margin-top: 1px; }
+    .agenda-dropdown-footer {
+      display: flex; gap: 8px;
+      border-top: 1px solid var(--border); margin-top: 8px; padding-top: 10px;
+    }
+    .agenda-footer-btn {
+      flex: 1; padding: 7px 10px; border-radius: var(--radius-sm);
+      border: 1px solid var(--border); background: var(--surface2);
+      font-family: 'DM Sans', sans-serif; font-size: 0.79rem; cursor: pointer;
+      transition: all .15s; color: var(--text);
+    }
+    .agenda-footer-btn:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+
+    /* ── Nom de l'agenda sur les événements ── */
+    .event-cal-name {
+      font-size: 0.73rem; color: var(--text-muted);
+      margin-top: 2px; font-style: italic;
+    }
+    .event-cal-dot {
+      display: inline-block; width: 8px; height: 8px;
+      border-radius: 50%; margin-right: 4px; flex-shrink: 0;
+      vertical-align: middle;
+    }
+
     /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -436,13 +527,35 @@
     <div class="header-left">
       <div class="app-title">📅 Mon Calendrier</div>
       <div class="app-subtitle" id="subtitle">Connectez-vous pour synchroniser avec Google Agenda</div>
+      <div class="sync-bar" id="sync-bar">
+        <span class="sync-dot" id="sync-dot"></span>
+        <span id="sync-label">Synchronisé</span>
+      </div>
     </div>
-    <button class="btn-auth" id="btn-auth" onclick="handleAuth()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
-      </svg>
-      <span id="auth-btn-label">Se connecter</span>
-    </button>
+    <div class="header-actions">
+      <!-- Sélecteur d'agendas -->
+      <div style="position:relative">
+        <button class="btn-agendas" id="btn-agendas" onclick="toggleAgendaDropdown()">
+          🗂 Agendas
+          <span class="agenda-badge" id="agenda-badge">0</span>
+        </button>
+        <div class="agenda-dropdown" id="agenda-dropdown">
+          <div class="agenda-dropdown-title">Mes agendas Google</div>
+          <div id="agenda-list"><div class="spinner" style="width:22px;height:22px;margin:12px auto"></div></div>
+          <div class="agenda-dropdown-footer">
+            <button class="agenda-footer-btn" onclick="selectAllAgendas()">Tout cocher</button>
+            <button class="agenda-footer-btn" onclick="deselectAllAgendas()">Tout décocher</button>
+          </div>
+        </div>
+      </div>
+      <!-- Auth -->
+      <button class="btn-auth" id="btn-auth" onclick="handleAuth()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+        </svg>
+        <span id="auth-btn-label">Se connecter</span>
+      </button>
+    </div>
   </header>
 
   <!-- Auth notice -->
@@ -584,23 +697,31 @@
 //   CONFIG — Remplacez par vos vraies clés
 // ═══════════════════════════════════════════
 const GOOGLE_CONFIG = {
-  clientId:   '647348410681-90bses902v8ln2766frod7lt29jske7u.apps.googleusercontent.com',
-  apiKey:     'AIzaSyBSbgEvnuLAiIg71kk4K2k-RltRPorYLMs',
-  scopes:     'https://www.googleapis.com/auth/calendar',
-  discoveryDoc: 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'
+  clientId:     '647348410681-90bses902v8ln2766frod7lt29jske7u.apps.googleusercontent.com',
+  apiKey:       'AIzaSyBSbgEvnuLAiIg71kk4K2k-RltRPorYLMs',
+  scopes:       'https://www.googleapis.com/auth/calendar',
+  discoveryDoc: 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
 };
+
+// Rafraîchissement toutes les 60 secondes
+// (quasi temps réel sans abuser du quota Google)
+const REFRESH_MS = 60_000;
 
 // ═══════════════════════════════════════════
 //   STATE
 // ═══════════════════════════════════════════
 let state = {
-  currentDate: new Date(),
+  currentDate:     new Date(),
   isAuthenticated: false,
-  events: {},          // key: 'YYYY-MM-DD' → array of events
-  selectedDate: null,
-  editingEvent: null,
-  selectedEmoji: '✨',
+  accessToken:     null,
+  events:          {},
+  calendars:       [],
+  selectedCalIds:  new Set(),
+  selectedDate:    null,
+  selectedEmoji:   '✨',
 };
+
+let refreshTimer = null;
 
 const EMOJIS = [
   '✨','🎉','🎂','📅','⭐','🔥','💡','🏆',
@@ -608,23 +729,40 @@ const EMOJIS = [
   '🚗','✈️','🏠','💰','📝','🔑','🌟','❤️',
   '😊','🎯','📚','🏋️','🌿','🍎','🐾','🌙',
 ];
-
-const MONTHS_FR = [
-  'Janvier','Février','Mars','Avril','Mai','Juin',
-  'Juillet','Août','Septembre','Octobre','Novembre','Décembre'
-];
-
+const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 const DAYS_LONG = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
 
 // ═══════════════════════════════════════════
-//   GOOGLE API
+//   PERSISTANCE SESSION (survit au F5)
+// ═══════════════════════════════════════════
+const SESSION_KEY = 'gcal_session';
+
+function saveSession(token, expiresIn) {
+  const expiry = Date.now() + (parseInt(expiresIn) - 60) * 1000;
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ token, expiry }));
+}
+
+function loadSession() {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const { token, expiry } = JSON.parse(raw);
+    if (Date.now() >= expiry) { sessionStorage.removeItem(SESSION_KEY); return null; }
+    return token;
+  } catch { return null; }
+}
+
+function clearSession() { sessionStorage.removeItem(SESSION_KEY); }
+
+// ═══════════════════════════════════════════
+//   GOOGLE API — Chargement
 // ═══════════════════════════════════════════
 let gapiLoaded = false, gisLoaded = false, tokenClient = null;
 
 function loadGoogleAPI() {
   const s1 = document.createElement('script');
   s1.src = 'https://apis.google.com/js/api.js';
-  s1.onload = () => { gapi.load('client', initGapiClient); };
+  s1.onload = () => gapi.load('client', initGapiClient);
   document.head.appendChild(s1);
 
   const s2 = document.createElement('script');
@@ -636,196 +774,313 @@ function loadGoogleAPI() {
 async function initGapiClient() {
   try {
     await gapi.client.init({
-      apiKey: GOOGLE_CONFIG.apiKey,
+      apiKey:        GOOGLE_CONFIG.apiKey,
       discoveryDocs: [GOOGLE_CONFIG.discoveryDoc],
     });
-    gapiLoaded = true;
-    maybeEnableButtons();
-  } catch(e) { /* API key not set — local mode */ }
+  } catch(e) { /* mode dégradé */ }
+  gapiLoaded = true;
+  checkBothReady();
 }
 
 function initGIS() {
   try {
     tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: GOOGLE_CONFIG.clientId,
-      scope: GOOGLE_CONFIG.scopes,
-      callback: async (resp) => {
-        if (resp.error) { showToast('Connexion annulée', 'error'); return; }
-        // ✅ FIX 1 : transmettre le token à gapi.client pour les appels API
-        gapi.client.setToken(resp);
-        state.isAuthenticated = true;
-        state.accessToken = resp.access_token;
-        updateAuthUI();
-        showToast('✓ Connecté à Google Agenda', 'success');
-        await fetchGoogleEvents();
-        renderCalendar();
-      },
+      scope:     GOOGLE_CONFIG.scopes,
+      callback:  onTokenReceived,
     });
-    gisLoaded = true;
-    maybeEnableButtons();
   } catch(e) { console.error('GIS init failed', e); }
+  gisLoaded = true;
+  checkBothReady();
 }
 
-function maybeEnableButtons() {
-  if (gapiLoaded && gisLoaded) {
-    document.getElementById('btn-auth').style.display = 'flex';
+// Appelé quand les deux libs sont prêtes — reconnexion silencieuse
+async function checkBothReady() {
+  if (!gapiLoaded || !gisLoaded) return;
+  const saved = loadSession();
+  if (saved) {
+    try {
+      const test = await fetch(
+        'https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=1',
+        { headers: { Authorization: `Bearer ${saved}` } }
+      );
+      if (test.ok) {
+        gapi.client.setToken({ access_token: saved });
+        state.accessToken     = saved;
+        state.isAuthenticated = true;
+        updateAuthUI();
+        showToast('✓ Reconnecté automatiquement', 'success');
+        await loadCalendarList();
+        await fetchAllEvents();
+        renderCalendar();
+        startAutoRefresh();
+        return;
+      }
+    } catch { /* token invalide */ }
+    clearSession();
   }
 }
 
+async function onTokenReceived(resp) {
+  if (resp.error) { showToast('Connexion annulée', 'error'); return; }
+  gapi.client.setToken(resp);
+  state.accessToken     = resp.access_token;
+  state.isAuthenticated = true;
+  saveSession(resp.access_token, resp.expires_in || 3599);
+  updateAuthUI();
+  showToast('✓ Connecté à Google Agenda', 'success');
+  await loadCalendarList();
+  await fetchAllEvents();
+  renderCalendar();
+  startAutoRefresh();
+}
+
+// ═══════════════════════════════════════════
+//   AUTH
+// ═══════════════════════════════════════════
 function handleAuth() {
   if (state.isAuthenticated) {
-    google?.accounts?.oauth2?.revoke?.(gapi?.client?.getToken()?.access_token, ()=>{});
+    google?.accounts?.oauth2?.revoke?.(state.accessToken, () => {});
     gapi?.client?.setToken?.('');
+    clearSession();
+    stopAutoRefresh();
     state.isAuthenticated = false;
+    state.accessToken     = null;
+    state.events          = {};
+    state.calendars       = [];
+    state.selectedCalIds  = new Set();
     updateAuthUI();
+    renderCalendar();
     showToast('Déconnecté');
     return;
   }
-  // Check if config is set
   if (GOOGLE_CONFIG.clientId === 'VOTRE_CLIENT_ID.apps.googleusercontent.com') {
-    showToast('⚙️ Configurez vos clés API Google en haut du fichier', 'error');
-    return;
+    showToast('⚙️ Configurez vos clés API dans le fichier', 'error'); return;
   }
-  if (tokenClient) {
-    tokenClient.requestAccessToken({ prompt: '' });
-  } else {
-    showToast('Google API non disponible, mode local actif', 'error');
-  }
+  tokenClient?.requestAccessToken({ prompt: '' });
 }
 
-async function fetchGoogleEvents() {
-  if (!state.isAuthenticated || !state.accessToken) return;
+function updateAuthUI() {
+  const auth = state.isAuthenticated;
+  document.getElementById('auth-notice').style.display = auth ? 'none' : 'block';
+  document.getElementById('auth-btn-label').textContent = auth ? 'Déconnexion' : 'Se connecter';
+  document.getElementById('subtitle').textContent = auth
+    ? '✓ Synchronisé avec Google Agenda'
+    : 'Connectez-vous pour synchroniser avec Google Agenda';
+  document.getElementById('btn-agendas').classList.toggle('visible', auth);
+  document.getElementById('sync-bar').classList.toggle('visible', auth);
+}
+
+// ═══════════════════════════════════════════
+//   SÉLECTEUR D'AGENDAS
+// ═══════════════════════════════════════════
+async function loadCalendarList() {
   try {
-    const firstDay = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth(), 1);
-    const lastDay  = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth()+1, 0, 23, 59, 59);
-
-    const params = new URLSearchParams({
-      timeMin:      firstDay.toISOString(),
-      timeMax:      lastDay.toISOString(),
-      singleEvents: 'true',
-      orderBy:      'startTime',
-      maxResults:   '250',
-    });
-
     const resp = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
-      { headers: { 'Authorization': `Bearer ${state.accessToken}` } }
+      'https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=50',
+      { headers: { Authorization: `Bearer ${state.accessToken}` } }
     );
+    if (!resp.ok) return;
+    const data = await resp.json();
+    state.calendars = data.items || [];
+    state.calendars.forEach(c => state.selectedCalIds.add(c.id));
+    renderAgendaList();
+    updateAgendaBadge();
+  } catch(e) { console.error('loadCalendarList', e); }
+}
 
-    if (!resp.ok) { console.error('Fetch events failed', resp.status); return; }
+function renderAgendaList() {
+  const list = document.getElementById('agenda-list');
+  list.innerHTML = '';
+  if (!state.calendars.length) {
+    list.innerHTML = '<p style="font-size:.83rem;color:var(--text-muted);padding:8px 10px">Aucun agenda trouvé</p>';
+    return;
+  }
+  state.calendars.forEach(cal => {
+    const color   = cal.backgroundColor || '#6b7f5e';
+    const checked = state.selectedCalIds.has(cal.id);
+    const item = document.createElement('div');
+    item.className = 'agenda-item';
+    item.dataset.calId = cal.id;
+    item.innerHTML = `
+      <div class="agenda-check" style="border-color:${color};background:${checked ? color : 'transparent'};color:#fff">
+        ${checked ? '✓' : ''}
+      </div>
+      <div class="agenda-info">
+        <div class="agenda-name">${cal.summary}</div>
+        ${cal.primary ? '<div class="agenda-primary">Agenda principal</div>' : ''}
+      </div>
+    `;
+    item.onclick = () => toggleAgenda(cal.id, color, item);
+    list.appendChild(item);
+  });
+}
 
-    const data  = await resp.json();
-    const items = data.items || [];
+function toggleAgenda(calId, color, itemEl) {
+  const box = itemEl.querySelector('.agenda-check');
+  if (state.selectedCalIds.has(calId)) {
+    state.selectedCalIds.delete(calId);
+    box.style.background = 'transparent';
+    box.textContent = '';
+  } else {
+    state.selectedCalIds.add(calId);
+    box.style.background = color;
+    box.textContent = '✓';
+  }
+  updateAgendaBadge();
+  fetchAllEvents().then(renderCalendar);
+}
 
-    // Effacer les événements Google existants avant de recharger
-    Object.keys(state.events).forEach(key => {
-      state.events[key] = state.events[key].filter(e => e.source !== 'google');
+function selectAllAgendas() {
+  state.calendars.forEach(c => state.selectedCalIds.add(c.id));
+  renderAgendaList(); updateAgendaBadge();
+  fetchAllEvents().then(renderCalendar);
+}
+
+function deselectAllAgendas() {
+  state.selectedCalIds.clear();
+  renderAgendaList(); updateAgendaBadge();
+  state.events = {}; renderCalendar();
+}
+
+function updateAgendaBadge() {
+  document.getElementById('agenda-badge').textContent = state.selectedCalIds.size;
+}
+
+function toggleAgendaDropdown() {
+  document.getElementById('agenda-dropdown').classList.toggle('open');
+}
+
+// ═══════════════════════════════════════════
+//   FETCH ÉVÉNEMENTS — tous les agendas
+// ═══════════════════════════════════════════
+async function fetchAllEvents() {
+  if (!state.isAuthenticated) return;
+  setSyncing(true);
+  const y = state.currentDate.getFullYear();
+  const m = state.currentDate.getMonth();
+  const timeMin = new Date(y, m, 1).toISOString();
+  const timeMax = new Date(y, m + 1, 0, 23, 59, 59).toISOString();
+
+  Object.keys(state.events).forEach(k => {
+    state.events[k] = state.events[k].filter(e => e.source === 'local');
+  });
+
+  await Promise.allSettled(
+    [...state.selectedCalIds].map(calId => fetchOneCalendar(calId, timeMin, timeMax))
+  );
+
+  setSyncing(false);
+  updateSyncLabel();
+}
+
+async function fetchOneCalendar(calId, timeMin, timeMax) {
+  try {
+    const params = new URLSearchParams({
+      timeMin, timeMax, singleEvents: 'true', orderBy: 'startTime', maxResults: '250',
     });
-
-    items.forEach(ev => {
-      const dateKey = (ev.start.dateTime || ev.start.date).substring(0,10);
+    const resp = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?${params}`,
+      { headers: { Authorization: `Bearer ${state.accessToken}` } }
+    );
+    if (!resp.ok) return;
+    const data  = await resp.json();
+    const cal   = state.calendars.find(c => c.id === calId);
+    const color = cal?.backgroundColor || '#6b7f5e';
+    (data.items || []).forEach(ev => {
+      const dateKey = (ev.start.dateTime || ev.start.date).substring(0, 10);
       if (!state.events[dateKey]) state.events[dateKey] = [];
       state.events[dateKey].push({
-        id:     ev.id,
-        title:  ev.summary || '(sans titre)',
-        desc:   ev.description || '',
-        start:  ev.start.dateTime || ev.start.date,
-        end:    ev.end?.dateTime || ev.end?.date || '',
-        emoji:  '📅',
-        color:  2,
+        id: ev.id, title: ev.summary || '(sans titre)',
+        desc: ev.description || '',
+        start: ev.start.dateTime || ev.start.date,
+        end:   ev.end?.dateTime  || ev.end?.date || '',
+        emoji: '📅', color: 2,
+        calId, calName: cal?.summary || '', calColor: color,
         source: 'google',
       });
     });
-  } catch(e) { console.error('Fetch events failed', e); }
+  } catch(e) { console.error(`fetchOneCalendar(${calId})`, e); }
 }
 
+// Alias pour compatibilité changeMonth
+async function fetchGoogleEvents() { return fetchAllEvents(); }
+
+// ═══════════════════════════════════════════
+//   RAFRAÎCHISSEMENT AUTOMATIQUE (60 sec)
+// ═══════════════════════════════════════════
+function startAutoRefresh() {
+  stopAutoRefresh();
+  refreshTimer = setInterval(async () => {
+    await fetchAllEvents();
+    renderCalendar();
+  }, REFRESH_MS);
+}
+
+function stopAutoRefresh() {
+  if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
+}
+
+// ═══════════════════════════════════════════
+//   INDICATEUR DE SYNC
+// ═══════════════════════════════════════════
+function setSyncing(active) {
+  document.getElementById('sync-dot').classList.toggle('spinning', active);
+}
+
+function updateSyncLabel() {
+  const now = new Date();
+  const hh  = String(now.getHours()).padStart(2, '0');
+  const mm  = String(now.getMinutes()).padStart(2, '0');
+  document.getElementById('sync-label').textContent = `Mis à jour à ${hh}:${mm}`;
+}
+
+// ═══════════════════════════════════════════
+//   GOOGLE API — Créer / Supprimer
+// ═══════════════════════════════════════════
 async function createGoogleEvent(ev) {
   if (!state.isAuthenticated || !state.accessToken) return null;
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-    // ✅ FIX 2 : pour les événements "toute la journée", Google exige
-    //    que la date de fin soit le jour SUIVANT (format exclusif)
     let endDate = ev.date;
     if (ev.allDay) {
       const d = new Date(ev.date + 'T12:00:00');
       d.setDate(d.getDate() + 1);
       endDate = toDateKey(d);
     }
-
     const body = {
-      summary:     ev.title,
-      description: ev.desc || '',
-      start: ev.allDay
-        ? { date: ev.date }
-        : { dateTime: `${ev.date}T${ev.timeStart}:00`, timeZone: tz },
-      end: ev.allDay
-        ? { date: endDate }
-        : { dateTime: `${ev.date}T${ev.timeEnd || ev.timeStart}:00`, timeZone: tz },
+      summary: ev.title, description: ev.desc || '',
+      start: ev.allDay ? { date: ev.date } : { dateTime: `${ev.date}T${ev.timeStart}:00`, timeZone: tz },
+      end:   ev.allDay ? { date: endDate } : { dateTime: `${ev.date}T${ev.timeEnd || ev.timeStart}:00`, timeZone: tz },
     };
-
-    // ✅ FIX 3 : utiliser fetch directement avec le token OAuth
-    //    plus fiable que gapi.client.calendar qui peut ne pas être chargé
-    const resp = await fetch(
-      'https://www.googleapis.com/calendar/v3/calendars/primary/events',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${state.accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      }
-    );
-
+    const resp = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${state.accessToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
     if (!resp.ok) {
       const err = await resp.json();
-      console.error('Google API error:', err);
       showToast(`⚠️ Erreur Google : ${err.error?.message || resp.status}`, 'error');
       return null;
     }
-
     return await resp.json();
   } catch(e) {
-    console.error('Create event failed', e);
-    showToast('⚠️ Impossible de créer l\'événement dans Google Agenda', 'error');
+    showToast("⚠️ Impossible de créer l'événement", 'error');
     return null;
   }
 }
 
-async function deleteGoogleEvent(eventId) {
+async function deleteGoogleEvent(eventId, calId) {
   if (!state.isAuthenticated || !state.accessToken) return;
+  const cal = encodeURIComponent(calId || 'primary');
   try {
     const resp = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
-      {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${state.accessToken}` },
-      }
+      `https://www.googleapis.com/calendar/v3/calendars/${cal}/events/${eventId}`,
+      { method: 'DELETE', headers: { Authorization: `Bearer ${state.accessToken}` } }
     );
-    if (!resp.ok && resp.status !== 204) {
+    if (!resp.ok && resp.status !== 204)
       showToast('⚠️ Impossible de supprimer dans Google Agenda', 'error');
-    }
   } catch(e) { console.error('Delete event failed', e); }
-}
-
-// ═══════════════════════════════════════════
-//   UI — Auth
-// ═══════════════════════════════════════════
-function updateAuthUI() {
-  const notice = document.getElementById('auth-notice');
-  const label  = document.getElementById('auth-btn-label');
-  const sub    = document.getElementById('subtitle');
-
-  if (state.isAuthenticated) {
-    notice.style.display = 'none';
-    label.textContent = 'Déconnexion';
-    sub.textContent = '✓ Synchronisé avec Google Agenda';
-  } else {
-    notice.style.display = 'block';
-    label.textContent = 'Se connecter';
-    sub.textContent = 'Connectez-vous pour synchroniser avec Google Agenda';
-  }
 }
 
 // ═══════════════════════════════════════════
@@ -834,37 +1089,28 @@ function updateAuthUI() {
 function renderCalendar() {
   const y = state.currentDate.getFullYear();
   const m = state.currentDate.getMonth();
-  document.getElementById('month-label').textContent =
-    `${MONTHS_FR[m]} ${y}`;
+  document.getElementById('month-label').textContent = `${MONTHS_FR[m]} ${y}`;
 
-  const firstDay  = new Date(y, m, 1).getDay();
+  const firstDay    = new Date(y, m, 1).getDay();
   const daysInMonth = new Date(y, m+1, 0).getDate();
-  const prevDays   = new Date(y, m, 0).getDate();
-
-  const today = new Date();
-  const todayStr = toDateKey(today);
+  const prevDays    = new Date(y, m, 0).getDate();
+  const todayStr    = toDateKey(new Date());
+  const total       = Math.ceil((firstDay + daysInMonth) / 7) * 7;
 
   const grid = document.getElementById('cal-grid');
   grid.innerHTML = '';
 
-  const total = Math.ceil((firstDay + daysInMonth) / 7) * 7;
-
   for (let i = 0; i < total; i++) {
     let day, inMonth = true, date;
     if (i < firstDay) {
-      day = prevDays - firstDay + i + 1;
-      date = new Date(y, m-1, day);
-      inMonth = false;
+      day = prevDays - firstDay + i + 1; date = new Date(y, m-1, day); inMonth = false;
     } else if (i >= firstDay + daysInMonth) {
-      day = i - firstDay - daysInMonth + 1;
-      date = new Date(y, m+1, day);
-      inMonth = false;
+      day = i - firstDay - daysInMonth + 1; date = new Date(y, m+1, day); inMonth = false;
     } else {
-      day = i - firstDay + 1;
-      date = new Date(y, m, day);
+      day = i - firstDay + 1; date = new Date(y, m, day);
     }
 
-    const dateKey = toDateKey(date);
+    const dateKey   = toDateKey(date);
     const dayEvents = state.events[dateKey] || [];
     const isToday   = dateKey === todayStr;
     const isWeekend = [0,6].includes(date.getDay());
@@ -872,26 +1118,25 @@ function renderCalendar() {
     const cell = document.createElement('div');
     cell.className = [
       'day-cell',
-      !inMonth ? 'other-month' : '',
-      isToday  ? 'today' : '',
-      isWeekend && inMonth ? 'weekend-day' : '',
-      dayEvents.length > 0 ? 'has-events' : '',
+      !inMonth           ? 'other-month' : '',
+      isToday            ? 'today'       : '',
+      isWeekend&&inMonth ? 'weekend-day' : '',
+      dayEvents.length   ? 'has-events'  : '',
     ].filter(Boolean).join(' ');
-
     cell.onclick = () => openDetailModal(dateKey, date);
 
-    // Day number
     const numEl = document.createElement('div');
     numEl.className = 'day-num';
     numEl.textContent = day;
     cell.appendChild(numEl);
 
-    // Event chips (max 3)
-    const visible = dayEvents.slice(0, 3);
-    visible.forEach(ev => {
+    dayEvents.slice(0, 3).forEach(ev => {
       const chip = document.createElement('div');
       chip.className = `event-chip chip-color-${ev.color ?? 0}`;
-      chip.innerHTML = `<span class="chip-emoji">${ev.emoji||'📅'}</span><span class="chip-title">${ev.title}</span>`;
+      const dot = ev.calColor
+        ? `<span style="width:6px;height:6px;border-radius:50%;background:${ev.calColor};flex-shrink:0;display:inline-block"></span>`
+        : '';
+      chip.innerHTML = `<span class="chip-emoji">${ev.emoji||'📅'}</span>${dot}<span class="chip-title">${ev.title}</span>`;
       chip.onclick = (e) => { e.stopPropagation(); openDetailModal(dateKey, date, ev.id); };
       cell.appendChild(chip);
     });
@@ -913,7 +1158,7 @@ function renderCalendar() {
 // ═══════════════════════════════════════════
 function changeMonth(delta) {
   state.currentDate.setMonth(state.currentDate.getMonth() + delta);
-  if (state.isAuthenticated) fetchGoogleEvents().then(renderCalendar);
+  if (state.isAuthenticated) fetchAllEvents().then(renderCalendar);
   else renderCalendar();
 }
 function goToToday() {
@@ -932,7 +1177,6 @@ function openDetailModal(dateKey, dateObj, highlightId = null) {
     `${DAYS_LONG[dateObj.getDay()].charAt(0).toUpperCase() + DAYS_LONG[dateObj.getDay()].slice(1)} ${dateObj.getDate()}`;
   document.getElementById('detail-date').textContent =
     `${MONTHS_FR[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
-
   document.getElementById('btn-add-from-detail').dataset.date = dateKey;
 
   const list = document.getElementById('detail-events-list');
@@ -950,14 +1194,19 @@ function openDetailModal(dateKey, dateObj, highlightId = null) {
         ? `${ev.start.substring(11,16)}${ev.end?.includes('T') ? ' – ' + ev.end.substring(11,16) : ''}`
         : 'Toute la journée';
 
+      const calLine = ev.calName
+        ? `<div class="event-cal-name"><span class="event-cal-dot" style="background:${ev.calColor||'var(--accent)'}"></span>${ev.calName}</div>`
+        : '';
+
       item.innerHTML = `
         <div class="event-emoji-badge">${ev.emoji || '📅'}</div>
         <div class="event-info">
           <div class="event-name">${ev.title}</div>
           <div class="event-time">🕐 ${timeStr}</div>
+          ${calLine}
           ${ev.desc ? `<div class="event-desc">${ev.desc}</div>` : ''}
         </div>
-        <button class="btn-delete-event" onclick="deleteEvent('${dateKey}','${ev.id}',event)" title="Supprimer">🗑</button>
+        <button class="btn-delete-event" onclick="deleteEvent('${dateKey}','${ev.id}','${ev.calId||''}',event)" title="Supprimer">🗑</button>
       `;
       list.appendChild(item);
     });
@@ -978,20 +1227,17 @@ function addFromDetail() {
 function openAddModal(dateKey) {
   const d = dateKey ? new Date(dateKey + 'T12:00:00') : new Date();
   const key = dateKey || toDateKey(d);
-
   document.getElementById('form-modal-title').textContent = 'Nouvel événement';
   document.getElementById('form-modal-date').textContent  =
     `${DAYS_LONG[d.getDay()].charAt(0).toUpperCase() + DAYS_LONG[d.getDay()].slice(1)}, ${d.getDate()} ${MONTHS_FR[d.getMonth()]} ${d.getFullYear()}`;
-
-  document.getElementById('f-title').value = '';
-  document.getElementById('f-date').value  = key;
+  document.getElementById('f-title').value      = '';
+  document.getElementById('f-date').value       = key;
   document.getElementById('f-time-start').value = '09:00';
   document.getElementById('f-time-end').value   = '10:00';
-  document.getElementById('f-color').value = '0';
-  document.getElementById('f-desc').value  = '';
+  document.getElementById('f-color').value      = '0';
+  document.getElementById('f-desc').value       = '';
   state.selectedEmoji = '✨';
   document.getElementById('emoji-selected').textContent = '✨';
-
   buildEmojiGrid();
   openModal('form-overlay');
   setTimeout(() => document.getElementById('f-title').focus(), 320);
@@ -1006,33 +1252,28 @@ async function submitEvent() {
   const teVal   = document.getElementById('f-time-end').value;
   const color   = parseInt(document.getElementById('f-color').value);
   const desc    = document.getElementById('f-desc').value.trim();
+  const btn     = document.getElementById('btn-form-submit');
 
-  const btn = document.getElementById('btn-form-submit');
   btn.disabled = true; btn.textContent = '⏳ Enregistrement…';
 
   const ev = {
-    id:        `local-${Date.now()}`,
-    title, desc, color,
-    emoji:     state.selectedEmoji,
-    start:     tsVal ? `${dateVal}T${tsVal}` : dateVal,
-    end:       teVal ? `${dateVal}T${teVal}` : dateVal,
-    allDay:    !tsVal,
-    date:      dateVal,
-    timeStart: tsVal,
-    timeEnd:   teVal,
-    source:    'local',
+    id: `local-${Date.now()}`, title, desc, color,
+    emoji: state.selectedEmoji,
+    start: tsVal ? `${dateVal}T${tsVal}` : dateVal,
+    end:   teVal ? `${dateVal}T${teVal}` : dateVal,
+    allDay: !tsVal, date: dateVal, timeStart: tsVal, timeEnd: teVal,
+    calId: '', calName: '', calColor: '', source: 'local',
   };
 
-  // Google sync
   if (state.isAuthenticated) {
     const gEv = await createGoogleEvent(ev);
-    if (gEv) { ev.id = gEv.id; ev.source = 'google'; }
+    if (gEv) { ev.id = gEv.id; ev.source = 'google'; ev.calId = 'primary'; }
   }
 
   if (!state.events[dateVal]) state.events[dateVal] = [];
   state.events[dateVal].push(ev);
 
-  btn.disabled = false; btn.textContent = '✓ Enregistrer l\'événement';
+  btn.disabled = false; btn.textContent = "✓ Enregistrer l'événement";
   closeModal('form-overlay');
   renderCalendar();
   showToast('✨ Événement ajouté !', 'success');
@@ -1041,17 +1282,14 @@ async function submitEvent() {
 // ═══════════════════════════════════════════
 //   DELETE EVENT
 // ═══════════════════════════════════════════
-async function deleteEvent(dateKey, evId, e) {
+async function deleteEvent(dateKey, evId, calId, e) {
   e.stopPropagation();
   const idx = (state.events[dateKey] || []).findIndex(ev => ev.id === evId);
   if (idx === -1) return;
   const ev = state.events[dateKey][idx];
-
   if (!confirm(`Supprimer "${ev.title}" ?`)) return;
-
-  if (ev.source === 'google') await deleteGoogleEvent(evId);
+  if (ev.source === 'google') await deleteGoogleEvent(evId, calId || ev.calId);
   state.events[dateKey].splice(idx, 1);
-
   renderCalendar();
   closeModal('detail-overlay');
   showToast('Événement supprimé');
@@ -1082,11 +1320,11 @@ function selectEmoji(em) {
   document.getElementById('emoji-grid').classList.remove('open');
 }
 
-// Close emoji picker on outside click
 document.addEventListener('click', e => {
-  const wrap = document.querySelector('.emoji-picker-wrap');
-  if (wrap && !wrap.contains(e.target))
+  if (!e.target.closest('.emoji-picker-wrap'))
     document.getElementById('emoji-grid').classList.remove('open');
+  if (!e.target.closest('#btn-agendas') && !e.target.closest('#agenda-dropdown'))
+    document.getElementById('agenda-dropdown').classList.remove('open');
 });
 
 // ═══════════════════════════════════════════
@@ -1101,18 +1339,15 @@ function closeModal(id) {
   document.body.style.overflow = '';
 }
 
-// Close on overlay click
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', e => {
     if (e.target === overlay) closeModal(overlay.id);
   });
 });
 
-// Escape key
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
+  if (e.key === 'Escape')
     document.querySelectorAll('.modal-overlay.open').forEach(el => closeModal(el.id));
-  }
 });
 
 // ═══════════════════════════════════════════
@@ -1131,10 +1366,7 @@ function showToast(msg, type = '') {
 //   UTILS
 // ═══════════════════════════════════════════
 function toDateKey(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,'0');
-  const day = String(d.getDate()).padStart(2,'0');
-  return `${y}-${m}-${day}`;
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
 // ═══════════════════════════════════════════
@@ -1144,12 +1376,11 @@ function init() {
   renderCalendar();
   loadGoogleAPI();
 
-  // Seed some demo events for today
   const todayKey = toDateKey(new Date());
   if (!state.events[todayKey]) {
     state.events[todayKey] = [
-      { id:'demo-1', title:'Réunion d\'équipe', emoji:'💼', color:0, start:`${todayKey}T09:00`, end:`${todayKey}T10:00`, desc:'Salle B3 — agenda du trimestre', source:'local' },
-      { id:'demo-2', title:'Déjeuner avec Marc', emoji:'🍕', color:1, start:`${todayKey}T12:30`, end:`${todayKey}T13:30`, desc:'Restaurant Le Vieux-Port', source:'local' },
+      { id:'demo-1', title:"Réunion d'équipe", emoji:'💼', color:0, start:`${todayKey}T09:00`, end:`${todayKey}T10:00`, desc:'Salle B3 — agenda du trimestre', calName:'', calColor:'', source:'local' },
+      { id:'demo-2', title:'Déjeuner avec Marc', emoji:'🍕', color:1, start:`${todayKey}T12:30`, end:`${todayKey}T13:30`, desc:'Restaurant Le Vieux-Port', calName:'', calColor:'', source:'local' },
     ];
     renderCalendar();
   }
