@@ -584,8 +584,8 @@
 //   CONFIG — Remplacez par vos vraies clés
 // ═══════════════════════════════════════════
 const GOOGLE_CONFIG = {
-  clientId:   '647348410681-90bses902v8ln2766frod7lt29jske7u.apps.googleusercontent.com',
-  apiKey:     'AIzaSyBSbgEvnuLAiIg71kk4K2k-RltRPorYLMs',
+  clientId:   'VOTRE_CLIENT_ID.apps.googleusercontent.com',
+  apiKey:     'VOTRE_API_KEY',
   scopes:     'https://www.googleapis.com/auth/calendar',
   discoveryDoc: 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'
 };
@@ -651,15 +651,19 @@ function initGIS() {
       scope: GOOGLE_CONFIG.scopes,
       callback: async (resp) => {
         if (resp.error) { showToast('Connexion annulée', 'error'); return; }
+        // ✅ FIX 1 : transmettre le token à gapi.client pour les appels API
+        gapi.client.setToken(resp);
         state.isAuthenticated = true;
+        state.accessToken = resp.access_token;
         updateAuthUI();
+        showToast('✓ Connecté à Google Agenda', 'success');
         await fetchGoogleEvents();
         renderCalendar();
       },
     });
     gisLoaded = true;
     maybeEnableButtons();
-  } catch(e) { /* GIS not set — local mode */ }
+  } catch(e) { console.error('GIS init failed', e); }
 }
 
 function maybeEnableButtons() {
@@ -690,61 +694,118 @@ function handleAuth() {
 }
 
 async function fetchGoogleEvents() {
-  if (!state.isAuthenticated) return;
+  if (!state.isAuthenticated || !state.accessToken) return;
   try {
     const firstDay = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth(), 1);
     const lastDay  = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth()+1, 0, 23, 59, 59);
-    const resp = await gapi.client.calendar.events.list({
-      calendarId: 'primary',
-      timeMin:    firstDay.toISOString(),
-      timeMax:    lastDay.toISOString(),
-      singleEvents: true,
-      orderBy: 'startTime',
-      maxResults: 250,
+
+    const params = new URLSearchParams({
+      timeMin:      firstDay.toISOString(),
+      timeMax:      lastDay.toISOString(),
+      singleEvents: 'true',
+      orderBy:      'startTime',
+      maxResults:   '250',
     });
-    const items = resp.result.items || [];
+
+    const resp = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
+      { headers: { 'Authorization': `Bearer ${state.accessToken}` } }
+    );
+
+    if (!resp.ok) { console.error('Fetch events failed', resp.status); return; }
+
+    const data  = await resp.json();
+    const items = data.items || [];
+
+    // Effacer les événements Google existants avant de recharger
+    Object.keys(state.events).forEach(key => {
+      state.events[key] = state.events[key].filter(e => e.source !== 'google');
+    });
+
     items.forEach(ev => {
       const dateKey = (ev.start.dateTime || ev.start.date).substring(0,10);
       if (!state.events[dateKey]) state.events[dateKey] = [];
-      // Avoid duplicates
-      if (!state.events[dateKey].find(e => e.id === ev.id)) {
-        state.events[dateKey].push({
-          id:     ev.id,
-          title:  ev.summary || '(sans titre)',
-          desc:   ev.description || '',
-          start:  ev.start.dateTime || ev.start.date,
-          end:    ev.end?.dateTime || ev.end?.date || '',
-          emoji:  '📅',
-          color:  2,
-          source: 'google',
-        });
-      }
+      state.events[dateKey].push({
+        id:     ev.id,
+        title:  ev.summary || '(sans titre)',
+        desc:   ev.description || '',
+        start:  ev.start.dateTime || ev.start.date,
+        end:    ev.end?.dateTime || ev.end?.date || '',
+        emoji:  '📅',
+        color:  2,
+        source: 'google',
+      });
     });
   } catch(e) { console.error('Fetch events failed', e); }
 }
 
 async function createGoogleEvent(ev) {
-  if (!state.isAuthenticated) return null;
+  if (!state.isAuthenticated || !state.accessToken) return null;
   try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    // ✅ FIX 2 : pour les événements "toute la journée", Google exige
+    //    que la date de fin soit le jour SUIVANT (format exclusif)
+    let endDate = ev.date;
+    if (ev.allDay) {
+      const d = new Date(ev.date + 'T12:00:00');
+      d.setDate(d.getDate() + 1);
+      endDate = toDateKey(d);
+    }
+
     const body = {
-      summary: ev.title,
-      description: ev.desc,
+      summary:     ev.title,
+      description: ev.desc || '',
       start: ev.allDay
         ? { date: ev.date }
-        : { dateTime: `${ev.date}T${ev.timeStart}:00`, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+        : { dateTime: `${ev.date}T${ev.timeStart}:00`, timeZone: tz },
       end: ev.allDay
-        ? { date: ev.date }
-        : { dateTime: `${ev.date}T${ev.timeEnd || ev.timeStart}:00`, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+        ? { date: endDate }
+        : { dateTime: `${ev.date}T${ev.timeEnd || ev.timeStart}:00`, timeZone: tz },
     };
-    const resp = await gapi.client.calendar.events.insert({ calendarId: 'primary', resource: body });
-    return resp.result;
-  } catch(e) { console.error('Create event failed', e); return null; }
+
+    // ✅ FIX 3 : utiliser fetch directement avec le token OAuth
+    //    plus fiable que gapi.client.calendar qui peut ne pas être chargé
+    const resp = await fetch(
+      'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${state.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      }
+    );
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      console.error('Google API error:', err);
+      showToast(`⚠️ Erreur Google : ${err.error?.message || resp.status}`, 'error');
+      return null;
+    }
+
+    return await resp.json();
+  } catch(e) {
+    console.error('Create event failed', e);
+    showToast('⚠️ Impossible de créer l\'événement dans Google Agenda', 'error');
+    return null;
+  }
 }
 
 async function deleteGoogleEvent(eventId) {
-  if (!state.isAuthenticated) return;
+  if (!state.isAuthenticated || !state.accessToken) return;
   try {
-    await gapi.client.calendar.events.delete({ calendarId: 'primary', eventId });
+    const resp = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`,
+      {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${state.accessToken}` },
+      }
+    );
+    if (!resp.ok && resp.status !== 204) {
+      showToast('⚠️ Impossible de supprimer dans Google Agenda', 'error');
+    }
   } catch(e) { console.error('Delete event failed', e); }
 }
 
