@@ -147,6 +147,8 @@
       transition: background .18s, transform .15s;
       position: relative;
       margin: 3px;
+      overflow: hidden;
+      min-width: 0;
     }
     .day-cell:hover { background: var(--surface2); transform: scale(1.01); }
     .day-cell.other-month { opacity: .35; pointer-events: none; }
@@ -174,19 +176,26 @@
 
     /* ── Event chips ── */
     .event-chip {
-      display: flex; align-items: center; gap: 5px;
-      padding: 3px 8px;
+      display: flex; align-items: center; gap: 4px;
+      padding: 3px 6px;
       border-radius: 6px;
       font-size: 0.73rem; font-weight: 500;
       margin-bottom: 3px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       cursor: pointer;
       transition: filter .15s, transform .1s;
-      max-width: 100%;
+      min-width: 0;
+      width: 100%;
+      overflow: hidden;
     }
     .event-chip:hover { filter: brightness(0.92); transform: scale(1.02); }
-    .event-chip .chip-emoji { font-size: 0.85rem; flex-shrink: 0; }
-    .event-chip .chip-title { overflow: hidden; text-overflow: ellipsis; }
+    .event-chip .chip-emoji { font-size: 0.82rem; flex-shrink: 0; }
+    .event-chip .chip-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+      flex: 1;
+    }
 
     .chip-color-0 { background: #dce9d5; color: #3a5c2e; }
     .chip-color-1 { background: #fde8d4; color: #7a3d12; }
@@ -311,35 +320,41 @@
 
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
-    /* ── Emoji picker ── */
-    .emoji-picker-wrap { position: relative; }
-    .emoji-trigger {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 16px; border-radius: var(--radius-sm);
-      border: 1.5px solid var(--border); background: var(--surface2);
-      cursor: pointer; font-size: 0.93rem; transition: border-color .18s;
-      min-height: 46px; user-select: none;
+    /* ── Emoji picker inline ── */
+    .emoji-inline-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 6px;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
     }
-    .emoji-trigger:hover { border-color: var(--accent); }
-    .emoji-selected { font-size: 1.4rem; }
-    .emoji-label { font-size: 0.85rem; color: var(--text-muted); }
-
-    .emoji-grid {
-      position: absolute; top: calc(100% + 8px); left: 0;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); box-shadow: var(--shadow-lg);
-      padding: 12px; display: grid; grid-template-columns: repeat(8,1fr);
-      gap: 4px; z-index: 50; width: 280px;
-      display: none;
-    }
-    .emoji-grid.open { display: grid; }
     .emoji-btn {
-      width: 32px; height: 32px; border-radius: 8px;
+      width: 100%; aspect-ratio: 1;
+      border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.1rem; cursor: pointer; border: none; background: none;
-      transition: background .14s, transform .1s;
+      font-size: 1.45rem; cursor: pointer; border: 2px solid transparent;
+      background: var(--surface);
+      transition: background .14s, transform .12s, border-color .14s, box-shadow .14s;
+      line-height: 1;
     }
-    .emoji-btn:hover { background: var(--surface2); transform: scale(1.2); }
+    .emoji-btn:hover {
+      background: var(--border);
+      transform: scale(1.18);
+    }
+    .emoji-btn.selected {
+      border-color: var(--accent);
+      background: rgba(107,127,94,.15);
+      box-shadow: 0 0 0 3px rgba(107,127,94,.18);
+      transform: scale(1.12);
+    }
+    .emoji-preview {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 8px;
+      font-size: 0.83rem; color: var(--text-muted);
+    }
+    .emoji-preview-icon { font-size: 1.7rem; line-height: 1; }
 
     /* ── Action buttons ── */
     .btn-submit {
@@ -673,13 +688,11 @@
       </div>
       <div class="form-group">
         <label class="form-label">Émoji</label>
-        <div class="emoji-picker-wrap">
-          <div class="emoji-trigger" id="emoji-trigger" onclick="toggleEmojiPicker()">
-            <span class="emoji-selected" id="emoji-selected">✨</span>
-            <span class="emoji-label">Cliquez pour changer</span>
-          </div>
-          <div class="emoji-grid" id="emoji-grid"></div>
+        <div class="emoji-preview">
+          <span class="emoji-preview-icon" id="emoji-selected">✨</span>
+          <span>Émoji sélectionné — cliquez pour en choisir un autre</span>
         </div>
+        <div class="emoji-inline-grid" id="emoji-grid"></div>
       </div>
       <div class="form-group">
         <label class="form-label">Description</label>
@@ -1296,33 +1309,32 @@ async function deleteEvent(dateKey, evId, calId, e) {
 }
 
 // ═══════════════════════════════════════════
-//   EMOJI PICKER
+//   EMOJI PICKER — grille inline
 // ═══════════════════════════════════════════
 function buildEmojiGrid() {
   const grid = document.getElementById('emoji-grid');
   grid.innerHTML = '';
   EMOJIS.forEach(em => {
     const btn = document.createElement('button');
-    btn.className = 'emoji-btn';
+    btn.className = 'emoji-btn' + (em === state.selectedEmoji ? ' selected' : '');
     btn.textContent = em;
+    btn.type = 'button';
+    btn.title = em;
     btn.onclick = () => selectEmoji(em);
     grid.appendChild(btn);
   });
 }
 
-function toggleEmojiPicker() {
-  document.getElementById('emoji-grid').classList.toggle('open');
-}
-
 function selectEmoji(em) {
   state.selectedEmoji = em;
   document.getElementById('emoji-selected').textContent = em;
-  document.getElementById('emoji-grid').classList.remove('open');
+  // Mettre à jour la sélection visuelle dans la grille
+  document.querySelectorAll('#emoji-grid .emoji-btn').forEach(btn => {
+    btn.classList.toggle('selected', btn.textContent === em);
+  });
 }
 
 document.addEventListener('click', e => {
-  if (!e.target.closest('.emoji-picker-wrap'))
-    document.getElementById('emoji-grid').classList.remove('open');
   if (!e.target.closest('#btn-agendas') && !e.target.closest('#agenda-dropdown'))
     document.getElementById('agenda-dropdown').classList.remove('open');
 });
