@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mon Calendrier</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:        #f5f0e8;
+      --surface:   #fffdf7;
+      --surface2:  #f0ebe0;
+      --border:    #e2d9c8;
+      --accent:    #6b7f5e;
+      --accent2:   #c47a4a;
+      --accent3:   #8aa4c4;
+      --text:      #2d2a24;
+      --text-muted:#8a8070;
+      --today-bg:  #6b7f5e;
+      --today-fg:  #fffdf7;
+      --shadow:    0 4px 24px rgba(45,42,36,0.10);
+      --shadow-lg: 0 12px 48px rgba(45,42,36,0.18);
+      --radius:    16px;
+      --radius-sm: 10px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 60px;
+      position: relative;
+    }
+
+    /* ── Subtle background texture ── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 10%, rgba(107,127,94,.09), transparent),
+        radial-gradient(ellipse 50% 60% at 80% 85%, rgba(196,122,74,.07), transparent),
+        radial-gradient(ellipse 70% 40% at 60% 30%, rgba(138,164,196,.06), transparent);
+      pointer-events: none;
+    }
+
+    .app { position: relative; z-index: 1; width: 100%; max-width: 960px; }
+
+    /* ── Header ── */
+    header {
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 28px;
+    }
+    .header-left { flex: 1; }
+    .app-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.4rem; font-weight: 600;
+      color: var(--text); letter-spacing: -0.5px;
+      line-height: 1;
+    }
+    .app-subtitle {
+      font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;
+    }
+
+    .btn-auth {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 22px; border-radius: 50px;
+      background: var(--text); color: var(--surface);
+      border: none; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500;
+      transition: background .2s, transform .15s, box-shadow .2s;
+      box-shadow: var(--shadow);
+    }
+    .btn-auth:hover { background: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+    .btn-auth svg { width: 20px; height: 20px; }
+
+    /* ── Calendar Card ── */
+    .calendar-card {
+      background: var(--surface);
+      border-radius: 24px;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    /* ── Nav bar ── */
+    .cal-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 22px 28px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+    }
+    .month-label {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.9rem; font-weight: 600; letter-spacing: -0.3px;
+      color: var(--text);
+    }
+    .nav-controls { display: flex; align-items: center; gap: 10px; }
+    .btn-nav {
+      width: 46px; height: 46px; border-radius: 50%;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; transition: all .2s;
+    }
+    .btn-nav:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); transform: scale(1.07); }
+    .btn-today {
+      padding: 10px 20px; border-radius: 50px;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500;
+      transition: all .2s;
+    }
+    .btn-today:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+
+    /* ── Day headers ── */
+    .cal-days-header {
+      display: grid; grid-template-columns: repeat(7,1fr);
+      padding: 12px 20px 0;
+      background: var(--surface);
+    }
+    .day-name {
+      text-align: center; padding: 8px 0;
+      font-size: 0.78rem; font-weight: 600; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--text-muted);
+    }
+    .day-name.weekend { color: var(--accent2); }
+
+    /* ── Grid ── */
+    .cal-grid {
+      display: grid; grid-template-columns: repeat(7,1fr);
+      gap: 0;
+      padding: 8px 12px 16px;
+      background: var(--surface);
+    }
+
+    .day-cell {
+      min-height: 110px;
+      padding: 8px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background .18s, transform .15s;
+      position: relative;
+      margin: 3px;
+    }
+    .day-cell:hover { background: var(--surface2); transform: scale(1.01); }
+    .day-cell.other-month { opacity: .35; pointer-events: none; }
+    .day-cell.today .day-num {
+      background: var(--today-bg); color: var(--today-fg);
+      border-radius: 50%; width: 34px; height: 34px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 600;
+    }
+    .day-cell.has-events::after {
+      content: '';
+      position: absolute; bottom: 6px; right: 8px;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent); opacity: .5;
+    }
+
+    .day-num {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.15rem; font-weight: 600;
+      width: 34px; height: 34px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 4px;
+    }
+    .day-cell.weekend-day .day-num { color: var(--accent2); }
+
+    /* ── Event chips ── */
+    .event-chip {
+      display: flex; align-items: center; gap: 5px;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 0.73rem; font-weight: 500;
+      margin-bottom: 3px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      cursor: pointer;
+      transition: filter .15s, transform .1s;
+      max-width: 100%;
+    }
+    .event-chip:hover { filter: brightness(0.92); transform: scale(1.02); }
+    .event-chip .chip-emoji { font-size: 0.85rem; flex-shrink: 0; }
+    .event-chip .chip-title { overflow: hidden; text-overflow: ellipsis; }
+
+    .chip-color-0 { background: #dce9d5; color: #3a5c2e; }
+    .chip-color-1 { background: #fde8d4; color: #7a3d12; }
+    .chip-color-2 { background: #d5e3f0; color: #1d3f60; }
+    .chip-color-3 { background: #f0d5e8; color: #5c1e46; }
+    .chip-color-4 { background: #f0ebd5; color: #5c4a10; }
+
+    .more-chip {
+      font-size: 0.72rem; color: var(--text-muted);
+      padding: 2px 6px; cursor: pointer;
+      font-weight: 600; letter-spacing: .02em;
+      display: inline-block;
+    }
+    .more-chip:hover { color: var(--accent); }
+
+    /* ── FAB ── */
+    .fab {
+      position: fixed; bottom: 36px; right: 36px;
+      width: 64px; height: 64px; border-radius: 50%;
+      background: var(--accent); color: var(--surface);
+      border: none; cursor: pointer;
+      font-size: 2rem; line-height: 1;
+      box-shadow: 0 8px 32px rgba(107,127,94,.45);
+      display: flex; align-items: center; justify-content: center;
+      transition: all .22s cubic-bezier(.34,1.56,.64,1);
+      z-index: 100;
+    }
+    .fab:hover { transform: scale(1.12) rotate(90deg); background: var(--accent2); box-shadow: 0 12px 40px rgba(196,122,74,.4); }
+
+    /* ── Modal base ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(45,42,36,.45);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--surface); border-radius: 24px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
+      width: 100%; max-width: 480px;
+      transform: translateY(24px) scale(.97);
+      transition: transform .28s cubic-bezier(.34,1.2,.64,1);
+      max-height: 90vh; overflow-y: auto;
+    }
+    .modal-overlay.open .modal { transform: translateY(0) scale(1); }
+
+    .modal-header {
+      padding: 24px 28px 18px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: flex-start; justify-content: space-between;
+    }
+    .modal-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.55rem; font-weight: 600; color: var(--text);
+    }
+    .modal-date { font-size: 0.83rem; color: var(--text-muted); margin-top: 3px; }
+    .btn-close {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--surface2); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; color: var(--text-muted);
+      transition: all .18s; flex-shrink: 0;
+    }
+    .btn-close:hover { background: #f0d5d5; color: #8b2020; }
+
+    .modal-body { padding: 20px 28px 28px; }
+
+    /* ── Day detail modal ── */
+    .event-list-item {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      transition: box-shadow .18s;
+      cursor: pointer;
+    }
+    .event-list-item:hover { box-shadow: var(--shadow); }
+    .event-emoji-badge {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; flex-shrink: 0;
+      background: var(--surface);
+    }
+    .event-info { flex: 1; min-width: 0; }
+    .event-name { font-size: 0.95rem; font-weight: 600; }
+    .event-time { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+    .event-desc { font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
+
+    .empty-state {
+      text-align: center; padding: 32px 0;
+      color: var(--text-muted); font-size: 0.9rem;
+    }
+    .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 10px; }
+
+    /* ── Form modal ── */
+    .form-group { margin-bottom: 18px; }
+    .form-label {
+      display: block; font-size: 0.8rem; font-weight: 600;
+      letter-spacing: .06em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 8px;
+    }
+    .form-input, .form-textarea, .form-select {
+      width: 100%; padding: 12px 16px;
+      border-radius: var(--radius-sm); border: 1.5px solid var(--border);
+      background: var(--surface2); color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 0.93rem;
+      outline: none; transition: border-color .18s, box-shadow .18s;
+    }
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(107,127,94,.12);
+    }
+    .form-textarea { resize: vertical; min-height: 80px; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    /* ── Emoji picker ── */
+    .emoji-picker-wrap { position: relative; }
+    .emoji-trigger {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border); background: var(--surface2);
+      cursor: pointer; font-size: 0.93rem; transition: border-color .18s;
+      min-height: 46px; user-select: none;
+    }
+    .emoji-trigger:hover { border-color: var(--accent); }
+    .emoji-selected { font-size: 1.4rem; }
+    .emoji-label { font-size: 0.85rem; color: var(--text-muted); }
+
+    .emoji-grid {
+      position: absolute; top: calc(100% + 8px); left: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow-lg);
+      padding: 12px; display: grid; grid-template-columns: repeat(8,1fr);
+      gap: 4px; z-index: 50; width: 280px;
+      display: none;
+    }
+    .emoji-grid.open { display: grid; }
+    .emoji-btn {
+      width: 32px; height: 32px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; cursor: pointer; border: none; background: none;
+      transition: background .14s, transform .1s;
+    }
+    .emoji-btn:hover { background: var(--surface2); transform: scale(1.2); }
+
+    /* ── Action buttons ── */
+    .btn-submit {
+      width: 100%; padding: 14px;
+      border-radius: 50px; border: none; cursor: pointer;
+      background: var(--accent); color: var(--surface);
+      font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 600;
+      letter-spacing: .03em;
+      transition: all .2s; margin-top: 8px;
+      box-shadow: 0 4px 16px rgba(107,127,94,.3);
+    }
+    .btn-submit:hover { background: #5a6c4e; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(107,127,94,.4); }
+    .btn-submit:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+    .btn-add-from-detail {
+      display: flex; align-items: center; gap: 8px;
+      width: 100%; padding: 12px 16px;
+      border-radius: var(--radius-sm); border: 1.5px dashed var(--border);
+      background: transparent; color: var(--text-muted);
+      font-family: 'DM Sans', sans-serif; font-size: 0.9rem; cursor: pointer;
+      transition: all .18s; margin-top: 8px;
+    }
+    .btn-add-from-detail:hover { border-color: var(--accent); color: var(--accent); background: rgba(107,127,94,.05); }
+
+    /* ── Auth notice ── */
+    .auth-notice {
+      background: var(--surface2); border: 1px dashed var(--border);
+      border-radius: var(--radius); padding: 28px 32px;
+      text-align: center; margin-bottom: 20px;
+    }
+    .auth-notice .notice-icon { font-size: 2.5rem; margin-bottom: 12px; }
+    .auth-notice h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.3rem; margin-bottom: 6px;
+    }
+    .auth-notice p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px; }
+
+    /* ── Loading spinner ── */
+    .spinner {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: 3px solid var(--border); border-top-color: var(--accent);
+      animation: spin .7s linear infinite; margin: 20px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 116px; right: 36px;
+      background: var(--text); color: var(--surface);
+      padding: 12px 20px; border-radius: 50px;
+      font-size: 0.88rem; font-weight: 500;
+      box-shadow: var(--shadow-lg); z-index: 300;
+      transform: translateY(20px); opacity: 0;
+      transition: all .3s cubic-bezier(.34,1.4,.64,1);
+      pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.success { background: var(--accent); }
+    .toast.error { background: #c0392b; }
+
+    /* ── Delete btn ── */
+    .btn-delete-event {
+      width: 32px; height: 32px; border-radius: 50%; border: none;
+      background: transparent; cursor: pointer; color: var(--text-muted);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.95rem; transition: all .15s; flex-shrink: 0;
+    }
+    .btn-delete-event:hover { background: #f0d5d5; color: #8b2020; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+    /* ── Responsiveness ── */
+    @media (max-width: 640px) {
+      .app-title { font-size: 1.8rem; }
+      .cal-nav { padding: 16px; }
+      .month-label { font-size: 1.4rem; }
+      .day-cell { min-height: 72px; padding: 5px; }
+      .day-num { font-size: 0.95rem; width: 28px; height: 28px; }
+      .event-chip { font-size: 0.65rem; padding: 2px 5px; }
+      .form-row { grid-template-columns: 1fr; }
+      .fab { width: 54px; height: 54px; font-size: 1.6rem; bottom: 24px; right: 24px; }
+      .cal-days-header, .cal-grid { padding: 6px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Header -->
+  <header>
+    <div class="header-left">
+      <div class="app-title">📅 Mon Calendrier</div>
+      <div class="app-subtitle" id="subtitle">Connectez-vous pour synchroniser avec Google Agenda</div>
+    </div>
+    <button class="btn-auth" id="btn-auth" onclick="handleAuth()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+      </svg>
+      <span id="auth-btn-label">Se connecter</span>
+    </button>
+  </header>
+
+  <!-- Auth notice -->
+  <div class="auth-notice" id="auth-notice">
+    <div class="notice-icon">🔑</div>
+    <h3>Synchronisation Google Agenda</h3>
+    <p>Connectez-vous avec votre compte Google pour voir et gérer vos événements en temps réel. Sans connexion, vous pouvez utiliser le calendrier en mode local.</p>
+    <button class="btn-auth" style="margin: 0 auto; display: inline-flex;" onclick="handleAuth()">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+      </svg>
+      Se connecter avec Google
+    </button>
+  </div>
+
+  <!-- Calendar Card -->
+  <div class="calendar-card">
+    <!-- Nav -->
+    <div class="cal-nav">
+      <div class="month-label" id="month-label">—</div>
+      <div class="nav-controls">
+        <button class="btn-nav" onclick="changeMonth(-1)" title="Mois précédent">&#8592;</button>
+        <button class="btn-today" onclick="goToToday()">Aujourd'hui</button>
+        <button class="btn-nav" onclick="changeMonth(1)" title="Mois suivant">&#8594;</button>
+      </div>
+    </div>
+
+    <!-- Day names -->
+    <div class="cal-days-header">
+      <div class="day-name">Dim</div>
+      <div class="day-name">Lun</div>
+      <div class="day-name">Mar</div>
+      <div class="day-name">Mer</div>
+      <div class="day-name">Jeu</div>
+      <div class="day-name">Ven</div>
+      <div class="day-name weekend">Sam</div>
+    </div>
+
+    <!-- Grid -->
+    <div class="cal-grid" id="cal-grid">
+      <div class="spinner"></div>
+    </div>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" onclick="openAddModal(null)" title="Ajouter un événement">+</button>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: Détails d'un jour
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="detail-overlay">
+  <div class="modal" id="detail-modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="detail-title">—</div>
+        <div class="modal-date" id="detail-date">—</div>
+      </div>
+      <button class="btn-close" onclick="closeModal('detail-overlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="detail-events-list"></div>
+      <button class="btn-add-from-detail" id="btn-add-from-detail" onclick="addFromDetail()">
+        <span style="font-size:1.1rem">＋</span> Ajouter un événement ce jour
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: Ajouter / modifier un événement
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="form-overlay">
+  <div class="modal" id="form-modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="form-modal-title">Nouvel événement</div>
+        <div class="modal-date" id="form-modal-date">—</div>
+      </div>
+      <button class="btn-close" onclick="closeModal('form-overlay')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Titre *</label>
+        <input class="form-input" id="f-title" type="text" placeholder="Ex : Réunion d'équipe, Anniversaire…" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input class="form-input" id="f-date" type="date" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Heure de début</label>
+          <input class="form-input" id="f-time-start" type="time" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Heure de fin</label>
+          <input class="form-input" id="f-time-end" type="time" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Couleur</label>
+          <select class="form-select" id="f-color">
+            <option value="0">🟢 Vert sauge</option>
+            <option value="1">🟠 Terracotta</option>
+            <option value="2">🔵 Bleu ardoise</option>
+            <option value="3">🟣 Mauve</option>
+            <option value="4">🟡 Dorée</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Émoji</label>
+        <div class="emoji-picker-wrap">
+          <div class="emoji-trigger" id="emoji-trigger" onclick="toggleEmojiPicker()">
+            <span class="emoji-selected" id="emoji-selected">✨</span>
+            <span class="emoji-label">Cliquez pour changer</span>
+          </div>
+          <div class="emoji-grid" id="emoji-grid"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-textarea" id="f-desc" placeholder="Notes, lieu, informations supplémentaires…"></textarea>
+      </div>
+      <button class="btn-submit" id="btn-form-submit" onclick="submitEvent()">
+        ✓ Enregistrer l'événement
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//   CONFIG — Remplacez par vos vraies clés
+// ═══════════════════════════════════════════
+const GOOGLE_CONFIG = {
+  clientId:   'VOTRE_CLIENT_ID.apps.googleusercontent.com',
+  apiKey:     'VOTRE_API_KEY',
+  scopes:     'https://www.googleapis.com/auth/calendar',
+  discoveryDoc: 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'
+};
+
+// ═══════════════════════════════════════════
+//   STATE
+// ═══════════════════════════════════════════
+let state = {
+  currentDate: new Date(),
+  isAuthenticated: false,
+  events: {},          // key: 'YYYY-MM-DD' → array of events
+  selectedDate: null,
+  editingEvent: null,
+  selectedEmoji: '✨',
+};
+
+const EMOJIS = [
+  '✨','🎉','🎂','📅','⭐','🔥','💡','🏆',
+  '💼','📞','🍕','☕','🏃','🎵','🏖️','💊',
+  '🚗','✈️','🏠','💰','📝','🔑','🌟','❤️',
+  '😊','🎯','📚','🏋️','🌿','🍎','🐾','🌙',
+];
+
+const MONTHS_FR = [
+  'Janvier','Février','Mars','Avril','Mai','Juin',
+  'Juillet','Août','Septembre','Octobre','Novembre','Décembre'
+];
+
+const DAYS_LONG = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+
+// ═══════════════════════════════════════════
+//   GOOGLE API
+// ═══════════════════════════════════════════
+let gapiLoaded = false, gisLoaded = false, tokenClient = null;
+
+function loadGoogleAPI() {
+  const s1 = document.createElement('script');
+  s1.src = 'https://apis.google.com/js/api.js';
+  s1.onload = () => { gapi.load('client', initGapiClient); };
+  document.head.appendChild(s1);
+
+  const s2 = document.createElement('script');
+  s2.src = 'https://accounts.google.com/gsi/client';
+  s2.onload = initGIS;
+  document.head.appendChild(s2);
+}
+
+async function initGapiClient() {
+  try {
+    await gapi.client.init({
+      apiKey: GOOGLE_CONFIG.apiKey,
+      discoveryDocs: [GOOGLE_CONFIG.discoveryDoc],
+    });
+    gapiLoaded = true;
+    maybeEnableButtons();
+  } catch(e) { /* API key not set — local mode */ }
+}
+
+function initGIS() {
+  try {
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CONFIG.clientId,
+      scope: GOOGLE_CONFIG.scopes,
+      callback: async (resp) => {
+        if (resp.error) { showToast('Connexion annulée', 'error'); return; }
+        state.isAuthenticated = true;
+        updateAuthUI();
+        await fetchGoogleEvents();
+        renderCalendar();
+      },
+    });
+    gisLoaded = true;
+    maybeEnableButtons();
+  } catch(e) { /* GIS not set — local mode */ }
+}
+
+function maybeEnableButtons() {
+  if (gapiLoaded && gisLoaded) {
+    document.getElementById('btn-auth').style.display = 'flex';
+  }
+}
+
+function handleAuth() {
+  if (state.isAuthenticated) {
+    google?.accounts?.oauth2?.revoke?.(gapi?.client?.getToken()?.access_token, ()=>{});
+    gapi?.client?.setToken?.('');
+    state.isAuthenticated = false;
+    updateAuthUI();
+    showToast('Déconnecté');
+    return;
+  }
+  // Check if config is set
+  if (GOOGLE_CONFIG.clientId === 'VOTRE_CLIENT_ID.apps.googleusercontent.com') {
+    showToast('⚙️ Configurez vos clés API Google en haut du fichier', 'error');
+    return;
+  }
+  if (tokenClient) {
+    tokenClient.requestAccessToken({ prompt: '' });
+  } else {
+    showToast('Google API non disponible, mode local actif', 'error');
+  }
+}
+
+async function fetchGoogleEvents() {
+  if (!state.isAuthenticated) return;
+  try {
+    const firstDay = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth(), 1);
+    const lastDay  = new Date(state.currentDate.getFullYear(), state.currentDate.getMonth()+1, 0, 23, 59, 59);
+    const resp = await gapi.client.calendar.events.list({
+      calendarId: 'primary',
+      timeMin:    firstDay.toISOString(),
+      timeMax:    lastDay.toISOString(),
+      singleEvents: true,
+      orderBy: 'startTime',
+      maxResults: 250,
+    });
+    const items = resp.result.items || [];
+    items.forEach(ev => {
+      const dateKey = (ev.start.dateTime || ev.start.date).substring(0,10);
+      if (!state.events[dateKey]) state.events[dateKey] = [];
+      // Avoid duplicates
+      if (!state.events[dateKey].find(e => e.id === ev.id)) {
+        state.events[dateKey].push({
+          id:     ev.id,
+          title:  ev.summary || '(sans titre)',
+          desc:   ev.description || '',
+          start:  ev.start.dateTime || ev.start.date,
+          end:    ev.end?.dateTime || ev.end?.date || '',
+          emoji:  '📅',
+          color:  2,
+          source: 'google',
+        });
+      }
+    });
+  } catch(e) { console.error('Fetch events failed', e); }
+}
+
+async function createGoogleEvent(ev) {
+  if (!state.isAuthenticated) return null;
+  try {
+    const body = {
+      summary: ev.title,
+      description: ev.desc,
+      start: ev.allDay
+        ? { date: ev.date }
+        : { dateTime: `${ev.date}T${ev.timeStart}:00`, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+      end: ev.allDay
+        ? { date: ev.date }
+        : { dateTime: `${ev.date}T${ev.timeEnd || ev.timeStart}:00`, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+    };
+    const resp = await gapi.client.calendar.events.insert({ calendarId: 'primary', resource: body });
+    return resp.result;
+  } catch(e) { console.error('Create event failed', e); return null; }
+}
+
+async function deleteGoogleEvent(eventId) {
+  if (!state.isAuthenticated) return;
+  try {
+    await gapi.client.calendar.events.delete({ calendarId: 'primary', eventId });
+  } catch(e) { console.error('Delete event failed', e); }
+}
+
+// ═══════════════════════════════════════════
+//   UI — Auth
+// ═══════════════════════════════════════════
+function updateAuthUI() {
+  const notice = document.getElementById('auth-notice');
+  const label  = document.getElementById('auth-btn-label');
+  const sub    = document.getElementById('subtitle');
+
+  if (state.isAuthenticated) {
+    notice.style.display = 'none';
+    label.textContent = 'Déconnexion';
+    sub.textContent = '✓ Synchronisé avec Google Agenda';
+  } else {
+    notice.style.display = 'block';
+    label.textContent = 'Se connecter';
+    sub.textContent = 'Connectez-vous pour synchroniser avec Google Agenda';
+  }
+}
+
+// ═══════════════════════════════════════════
+//   CALENDAR RENDER
+// ═══════════════════════════════════════════
+function renderCalendar() {
+  const y = state.currentDate.getFullYear();
+  const m = state.currentDate.getMonth();
+  document.getElementById('month-label').textContent =
+    `${MONTHS_FR[m]} ${y}`;
+
+  const firstDay  = new Date(y, m, 1).getDay();
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const prevDays   = new Date(y, m, 0).getDate();
+
+  const today = new Date();
+  const todayStr = toDateKey(today);
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+
+  const total = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+
+  for (let i = 0; i < total; i++) {
+    let day, inMonth = true, date;
+    if (i < firstDay) {
+      day = prevDays - firstDay + i + 1;
+      date = new Date(y, m-1, day);
+      inMonth = false;
+    } else if (i >= firstDay + daysInMonth) {
+      day = i - firstDay - daysInMonth + 1;
+      date = new Date(y, m+1, day);
+      inMonth = false;
+    } else {
+      day = i - firstDay + 1;
+      date = new Date(y, m, day);
+    }
+
+    const dateKey = toDateKey(date);
+    const dayEvents = state.events[dateKey] || [];
+    const isToday   = dateKey === todayStr;
+    const isWeekend = [0,6].includes(date.getDay());
+
+    const cell = document.createElement('div');
+    cell.className = [
+      'day-cell',
+      !inMonth ? 'other-month' : '',
+      isToday  ? 'today' : '',
+      isWeekend && inMonth ? 'weekend-day' : '',
+      dayEvents.length > 0 ? 'has-events' : '',
+    ].filter(Boolean).join(' ');
+
+    cell.onclick = () => openDetailModal(dateKey, date);
+
+    // Day number
+    const numEl = document.createElement('div');
+    numEl.className = 'day-num';
+    numEl.textContent = day;
+    cell.appendChild(numEl);
+
+    // Event chips (max 3)
+    const visible = dayEvents.slice(0, 3);
+    visible.forEach(ev => {
+      const chip = document.createElement('div');
+      chip.className = `event-chip chip-color-${ev.color ?? 0}`;
+      chip.innerHTML = `<span class="chip-emoji">${ev.emoji||'📅'}</span><span class="chip-title">${ev.title}</span>`;
+      chip.onclick = (e) => { e.stopPropagation(); openDetailModal(dateKey, date, ev.id); };
+      cell.appendChild(chip);
+    });
+
+    if (dayEvents.length > 3) {
+      const more = document.createElement('div');
+      more.className = 'more-chip';
+      more.textContent = `+${dayEvents.length - 3} autre${dayEvents.length - 3 > 1 ? 's' : ''}…`;
+      more.onclick = (e) => { e.stopPropagation(); openDetailModal(dateKey, date); };
+      cell.appendChild(more);
+    }
+
+    grid.appendChild(cell);
+  }
+}
+
+// ═══════════════════════════════════════════
+//   NAVIGATION
+// ═══════════════════════════════════════════
+function changeMonth(delta) {
+  state.currentDate.setMonth(state.currentDate.getMonth() + delta);
+  if (state.isAuthenticated) fetchGoogleEvents().then(renderCalendar);
+  else renderCalendar();
+}
+function goToToday() {
+  state.currentDate = new Date();
+  renderCalendar();
+}
+
+// ═══════════════════════════════════════════
+//   MODAL — Détails du jour
+// ═══════════════════════════════════════════
+function openDetailModal(dateKey, dateObj, highlightId = null) {
+  state.selectedDate = dateKey;
+  const dayEvents = state.events[dateKey] || [];
+
+  document.getElementById('detail-title').textContent =
+    `${DAYS_LONG[dateObj.getDay()].charAt(0).toUpperCase() + DAYS_LONG[dateObj.getDay()].slice(1)} ${dateObj.getDate()}`;
+  document.getElementById('detail-date').textContent =
+    `${MONTHS_FR[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+
+  document.getElementById('btn-add-from-detail').dataset.date = dateKey;
+
+  const list = document.getElementById('detail-events-list');
+  list.innerHTML = '';
+
+  if (dayEvents.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🌿</div><p>Aucun événement ce jour.<br>Ajoutez-en un !</p></div>`;
+  } else {
+    dayEvents.forEach(ev => {
+      const item = document.createElement('div');
+      item.className = 'event-list-item';
+      if (ev.id === highlightId) item.style.outline = '2px solid var(--accent)';
+
+      const timeStr = ev.start?.includes('T')
+        ? `${ev.start.substring(11,16)}${ev.end?.includes('T') ? ' – ' + ev.end.substring(11,16) : ''}`
+        : 'Toute la journée';
+
+      item.innerHTML = `
+        <div class="event-emoji-badge">${ev.emoji || '📅'}</div>
+        <div class="event-info">
+          <div class="event-name">${ev.title}</div>
+          <div class="event-time">🕐 ${timeStr}</div>
+          ${ev.desc ? `<div class="event-desc">${ev.desc}</div>` : ''}
+        </div>
+        <button class="btn-delete-event" onclick="deleteEvent('${dateKey}','${ev.id}',event)" title="Supprimer">🗑</button>
+      `;
+      list.appendChild(item);
+    });
+  }
+
+  openModal('detail-overlay');
+}
+
+function addFromDetail() {
+  const dateKey = state.selectedDate;
+  closeModal('detail-overlay');
+  openAddModal(dateKey);
+}
+
+// ═══════════════════════════════════════════
+//   MODAL — Formulaire ajout
+// ═══════════════════════════════════════════
+function openAddModal(dateKey) {
+  const d = dateKey ? new Date(dateKey + 'T12:00:00') : new Date();
+  const key = dateKey || toDateKey(d);
+
+  document.getElementById('form-modal-title').textContent = 'Nouvel événement';
+  document.getElementById('form-modal-date').textContent  =
+    `${DAYS_LONG[d.getDay()].charAt(0).toUpperCase() + DAYS_LONG[d.getDay()].slice(1)}, ${d.getDate()} ${MONTHS_FR[d.getMonth()]} ${d.getFullYear()}`;
+
+  document.getElementById('f-title').value = '';
+  document.getElementById('f-date').value  = key;
+  document.getElementById('f-time-start').value = '09:00';
+  document.getElementById('f-time-end').value   = '10:00';
+  document.getElementById('f-color').value = '0';
+  document.getElementById('f-desc').value  = '';
+  state.selectedEmoji = '✨';
+  document.getElementById('emoji-selected').textContent = '✨';
+
+  buildEmojiGrid();
+  openModal('form-overlay');
+  setTimeout(() => document.getElementById('f-title').focus(), 320);
+}
+
+async function submitEvent() {
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) { showToast('Le titre est requis', 'error'); document.getElementById('f-title').focus(); return; }
+
+  const dateVal = document.getElementById('f-date').value;
+  const tsVal   = document.getElementById('f-time-start').value;
+  const teVal   = document.getElementById('f-time-end').value;
+  const color   = parseInt(document.getElementById('f-color').value);
+  const desc    = document.getElementById('f-desc').value.trim();
+
+  const btn = document.getElementById('btn-form-submit');
+  btn.disabled = true; btn.textContent = '⏳ Enregistrement…';
+
+  const ev = {
+    id:        `local-${Date.now()}`,
+    title, desc, color,
+    emoji:     state.selectedEmoji,
+    start:     tsVal ? `${dateVal}T${tsVal}` : dateVal,
+    end:       teVal ? `${dateVal}T${teVal}` : dateVal,
+    allDay:    !tsVal,
+    date:      dateVal,
+    timeStart: tsVal,
+    timeEnd:   teVal,
+    source:    'local',
+  };
+
+  // Google sync
+  if (state.isAuthenticated) {
+    const gEv = await createGoogleEvent(ev);
+    if (gEv) { ev.id = gEv.id; ev.source = 'google'; }
+  }
+
+  if (!state.events[dateVal]) state.events[dateVal] = [];
+  state.events[dateVal].push(ev);
+
+  btn.disabled = false; btn.textContent = '✓ Enregistrer l\'événement';
+  closeModal('form-overlay');
+  renderCalendar();
+  showToast('✨ Événement ajouté !', 'success');
+}
+
+// ═══════════════════════════════════════════
+//   DELETE EVENT
+// ═══════════════════════════════════════════
+async function deleteEvent(dateKey, evId, e) {
+  e.stopPropagation();
+  const idx = (state.events[dateKey] || []).findIndex(ev => ev.id === evId);
+  if (idx === -1) return;
+  const ev = state.events[dateKey][idx];
+
+  if (!confirm(`Supprimer "${ev.title}" ?`)) return;
+
+  if (ev.source === 'google') await deleteGoogleEvent(evId);
+  state.events[dateKey].splice(idx, 1);
+
+  renderCalendar();
+  closeModal('detail-overlay');
+  showToast('Événement supprimé');
+}
+
+// ═══════════════════════════════════════════
+//   EMOJI PICKER
+// ═══════════════════════════════════════════
+function buildEmojiGrid() {
+  const grid = document.getElementById('emoji-grid');
+  grid.innerHTML = '';
+  EMOJIS.forEach(em => {
+    const btn = document.createElement('button');
+    btn.className = 'emoji-btn';
+    btn.textContent = em;
+    btn.onclick = () => selectEmoji(em);
+    grid.appendChild(btn);
+  });
+}
+
+function toggleEmojiPicker() {
+  document.getElementById('emoji-grid').classList.toggle('open');
+}
+
+function selectEmoji(em) {
+  state.selectedEmoji = em;
+  document.getElementById('emoji-selected').textContent = em;
+  document.getElementById('emoji-grid').classList.remove('open');
+}
+
+// Close emoji picker on outside click
+document.addEventListener('click', e => {
+  const wrap = document.querySelector('.emoji-picker-wrap');
+  if (wrap && !wrap.contains(e.target))
+    document.getElementById('emoji-grid').classList.remove('open');
+});
+
+// ═══════════════════════════════════════════
+//   MODAL HELPERS
+// ═══════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) closeModal(overlay.id);
+  });
+});
+
+// Escape key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open').forEach(el => closeModal(el.id));
+  }
+});
+
+// ═══════════════════════════════════════════
+//   TOAST
+// ═══════════════════════════════════════════
+let toastTimer;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ═══════════════════════════════════════════
+//   UTILS
+// ═══════════════════════════════════════════
+function toDateKey(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+// ═══════════════════════════════════════════
+//   INIT
+// ═══════════════════════════════════════════
+function init() {
+  renderCalendar();
+  loadGoogleAPI();
+
+  // Seed some demo events for today
+  const todayKey = toDateKey(new Date());
+  if (!state.events[todayKey]) {
+    state.events[todayKey] = [
+      { id:'demo-1', title:'Réunion d\'équipe', emoji:'💼', color:0, start:`${todayKey}T09:00`, end:`${todayKey}T10:00`, desc:'Salle B3 — agenda du trimestre', source:'local' },
+      { id:'demo-2', title:'Déjeuner avec Marc', emoji:'🍕', color:1, start:`${todayKey}T12:30`, end:`${todayKey}T13:30`, desc:'Restaurant Le Vieux-Port', source:'local' },
+    ];
+    renderCalendar();
+  }
+}
+
+init();
+</script>
+</body>
+</html>
