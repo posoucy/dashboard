@@ -1388,14 +1388,7 @@ function init() {
   renderCalendar();
   loadGoogleAPI();
 
-  const todayKey = toDateKey(new Date());
-  if (!state.events[todayKey]) {
-    state.events[todayKey] = [
-      { id:'demo-1', title:"Réunion d'équipe", emoji:'💼', color:0, start:`${todayKey}T09:00`, end:`${todayKey}T10:00`, desc:'Salle B3 — agenda du trimestre', calName:'', calColor:'', source:'local' },
-      { id:'demo-2', title:'Déjeuner avec Marc', emoji:'🍕', color:1, start:`${todayKey}T12:30`, end:`${todayKey}T13:30`, desc:'Restaurant Le Vieux-Port', calName:'', calColor:'', source:'local' },
-    ];
-    renderCalendar();
-  }
+
 }
 
 init();
