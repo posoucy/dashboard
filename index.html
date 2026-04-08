@@ -581,37 +581,39 @@
     @media (max-width: 800px) {
       body { padding: 8px 8px 80px; }
 
-      /* Barre date/météo : colonne au lieu de rangée */
+      /* Barre date/météo : date à gauche, météo à droite — sur une seule ligne */
       .datetime-bar {
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        align-items: center;
         gap: 10px;
-        padding: 12px 16px;
+        padding: 10px 14px;
       }
-      .datetime-sep { display: none; }
-      .datetime-left { flex: 0 0 100%; }
-      .datetime-time { font-size: 2.8rem; }
-      .datetime-date { font-size: 0.85rem; }
+      .datetime-sep { display: block; }
+      .datetime-left { flex-shrink: 0; }
+      .datetime-time { font-size: 2.4rem; }
+      .datetime-date { font-size: 0.78rem; }
 
-      /* Météo en ligne compacte sous l'heure */
+      /* Météo compacte à droite */
       .weather-now {
-        gap: 8px;
-        flex: 1;
-      }
-      .weather-icon { font-size: 2rem; }
-      .weather-temp { font-size: 2rem; }
-      .weather-desc { font-size: 0.73rem; }
-      .weather-details-inline { gap: 8px; }
-      .weather-detail-item { font-size: 0.7rem; }
-
-      /* Prévisions : réduire */
-      .weather-forecast {
-        padding-left: 10px;
         gap: 6px;
+        flex: 1;
+        min-width: 0;
       }
-      .forecast-icon { font-size: 0.9rem; }
-      .forecast-temp { font-size: 0.72rem; }
-      .forecast-min  { font-size: 0.65rem; }
-      .forecast-day  { font-size: 0.62rem; }
+      .weather-icon { font-size: 1.7rem; }
+      .weather-temp { font-size: 1.7rem; }
+      .weather-desc { font-size: 0.68rem; }
+      .weather-details-inline { gap: 6px; }
+      .weather-detail-item { font-size: 0.65rem; }
+
+      /* Prévisions : réduire + cacher si trop serré */
+      .weather-forecast {
+        padding-left: 8px;
+        gap: 5px;
+      }
+      .forecast-icon { font-size: 0.85rem; }
+      .forecast-temp { font-size: 0.68rem; }
+      .forecast-min  { font-size: 0.62rem; }
+      .forecast-day  { font-size: 0.6rem; }
 
       /* Calendrier : cellules plus petites */
       .day-cell  { min-height: 70px; padding: 4px; margin: 1px; }
