@@ -926,20 +926,17 @@ function loadPrefs() {
 // ═══════════════════════════════════════════
 const EMOJI_TAG_RE = /\[emoji:([^\]]+)\]\s*$/;
 
-// Extraire l'émoji caché de la description Google
 function extractEmojiFromDesc(desc) {
   if (!desc) return null;
   const m = desc.match(EMOJI_TAG_RE);
   return m ? m[1].trim() : null;
 }
 
-// Retirer le tag émoji de la description visible
 function stripEmojiTag(desc) {
   if (!desc) return '';
   return desc.replace(EMOJI_TAG_RE, '').trimEnd();
 }
 
-// Construire la description complète avec le tag émoji
 function buildDescWithEmoji(userDesc, emoji) {
   const base = (userDesc || '').trimEnd();
   if (!emoji || emoji === '📅') return base;
@@ -948,53 +945,44 @@ function buildDescWithEmoji(userDesc, emoji) {
 
 // ═══════════════════════════════════════════
 //   AUTHENTIFICATION PAR REDIRECTION
-//   (sans popup — compatible Fully Kiosk)
-//
-//   Flux : clic → redirection Google → retour
-//   sur cette page avec token dans l'URL hash
-//
-//   ⚠️  Dans Google Console, ajoutez l'URL
-//   de CETTE PAGE dans "URI de redirection
-//   autorisés" (pas seulement les origines JS)
+//   Sans popup — compatible Silk / Fully Kiosk
 // ═══════════════════════════════════════════
 
-// URL de redirection = cette page même, sans le hash
 function getRedirectUri() {
   return window.location.origin + window.location.pathname;
 }
 
-// Construire l'URL Google OAuth (flux implicite par redirection)
-function buildOAuthUrl() {
+function buildOAuthUrl(prompt) {
   const params = new URLSearchParams({
-    client_id:     GOOGLE_CONFIG.clientId,
-    redirect_uri:  getRedirectUri(),
-    response_type: 'token',
-    scope:         GOOGLE_CONFIG.scopes,
-    prompt:        'select_account',
+    client_id:              GOOGLE_CONFIG.clientId,
+    redirect_uri:           getRedirectUri(),
+    response_type:          'token',
+    scope:                  GOOGLE_CONFIG.scopes,
+    prompt:                 prompt || 'select_account',
     include_granted_scopes: 'true',
   });
   return 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
 }
 
-// Lire le token dans le hash de l'URL après retour de Google
-function parseTokenFromHash() {
+// Analyser le hash retourné par Google
+// Retourne { token, expiresIn } ou { error } ou null
+function parseHashFromGoogle() {
   const hash = window.location.hash.substring(1);
   if (!hash) return null;
-  const params = new URLSearchParams(hash);
-  const token  = params.get('access_token');
-  const expiry = params.get('expires_in');
-  if (!token) return null;
-  return { token, expiresIn: expiry || 3599 };
+  const params  = new URLSearchParams(hash);
+  const token   = params.get('access_token');
+  const error   = params.get('error');
+  const expires = params.get('expires_in');
+  if (token)  return { token, expiresIn: parseInt(expires) || 3599 };
+  if (error)  return { error };
+  return null;
 }
 
-// Nettoyer le hash de l'URL (discret, sans rechargement)
 function clearUrlHash() {
   history.replaceState(null, '', window.location.pathname + window.location.search);
 }
 
 function loadGoogleAPI() {
-  // On charge seulement gapi pour l'initialisation de la clé API
-  // (plus besoin de GIS — l'auth se fait par redirect)
   const s = document.createElement('script');
   s.src = 'https://apis.google.com/js/api.js';
   s.onload = () => gapi.load('client', initGapiClient);
@@ -1007,98 +995,94 @@ async function initGapiClient() {
       apiKey:        GOOGLE_CONFIG.apiKey,
       discoveryDocs: [GOOGLE_CONFIG.discoveryDoc],
     });
-  } catch(e) { /* mode dégradé */ }
+  } catch(e) {}
   await checkAuthOnLoad();
 }
 
-// Vérifié à chaque chargement de page
+// ─────────────────────────────────────────
+//   LOGIQUE AU CHARGEMENT
+// ─────────────────────────────────────────
 async function checkAuthOnLoad() {
-  // 1. Token qui revient de Google dans le hash ?
-  const fromGoogle = parseTokenFromHash();
-  if (fromGoogle) {
+
+  // ── Cas 1 : Google nous retourne quelque chose dans le hash
+  const fromHash = parseHashFromGoogle();
+  if (fromHash) {
     clearUrlHash();
-    await onTokenReceived(fromGoogle.token, fromGoogle.expiresIn);
+    if (fromHash.error) {
+      // Erreur Google (ex: login_required après prompt=none)
+      // → ne pas boucler, rester sur l'écran de connexion
+      console.info('OAuth error:', fromHash.error);
+      clearSession();
+      return;
+    }
+    // Token reçu → connexion
+    saveSession(fromHash.token, fromHash.expiresIn);
+    await connectWithToken(fromHash.token, true);
     return;
   }
 
-  // 2. Session existante dans localStorage ?
+  // ── Cas 2 : Token valide dans localStorage → connexion directe
   const saved = loadSession();
-  if (saved) {
-    if (!saved.expired) {
-      // Token encore valide → connexion directe
-      try {
-        const test = await fetch(
-          'https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=1',
-          { headers: { Authorization: 'Bearer ' + saved.token } }
-        );
-        if (test.ok) {
-          await connectWithToken(saved.token);
-          return;
-        }
-      } catch(e) {}
-    }
-    // Token expiré ou invalide → refresh silencieux
-    // Google reconnecte automatiquement si l'utilisateur est
-    // déjà connecté dans Silk (prompt=none)
-    silentRefresh();
+  if (saved && !saved.expired) {
+    await connectWithToken(saved.token, false);
+    return;
   }
+
+  // ── Cas 3 : Token expiré → refresh silencieux ONE-SHOT
+  //    On marque qu'on a déjà tenté pour éviter une boucle infinie
+  if (saved && saved.expired) {
+    const alreadyTried = sessionStorage.getItem('gcal_refresh_tried');
+    if (!alreadyTried) {
+      sessionStorage.setItem('gcal_refresh_tried', '1');
+      // Tenter un refresh sans interaction utilisateur
+      window.location.href = buildOAuthUrl('none');
+      return;
+    }
+    // Deuxième tentative échouée → effacer et afficher l'écran de connexion
+    sessionStorage.removeItem('gcal_refresh_tried');
+    clearSession();
+    return;
+  }
+
+  // ── Cas 4 : Aucune session → afficher l'écran de connexion
 }
 
-// Refresh silencieux : redirect sans écran de connexion Google
-// Si le compte est connu de Silk, ça revient immédiatement avec un nouveau token
-function silentRefresh() {
-  const params = new URLSearchParams({
-    client_id:     GOOGLE_CONFIG.clientId,
-    redirect_uri:  getRedirectUri(),
-    response_type: 'token',
-    scope:         GOOGLE_CONFIG.scopes,
-    prompt:        'none',  // ← aucune interaction utilisateur
-    include_granted_scopes: 'true',
-  });
-  window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
-}
+// Connecter avec un token (déjà validé ou frais)
+async function connectWithToken(token, isNewToken) {
+  // Nettoyer le flag de refresh
+  sessionStorage.removeItem('gcal_refresh_tried');
 
-async function connectWithToken(token) {
   state.accessToken     = token;
   state.isAuthenticated = true;
   updateAuthUI();
-  // Restaurer les préférences sauvegardées
+
+  // Restaurer les préférences d'agendas
   const prefs = loadPrefs();
   if (prefs) {
-    state.defaultCalId = prefs.defaultCalId || 'primary';
-    // Les IDs cochés seront appliqués après le chargement de la liste
+    state.defaultCalId      = prefs.defaultCalId || 'primary';
     state._savedSelectedIds = new Set(prefs.selectedCalIds || []);
   }
-  showToast('✓ Reconnecté automatiquement', 'success');
+
+  if (isNewToken) showToast('✓ Connecté à Google Agenda', 'success');
+  else            showToast('✓ Reconnecté automatiquement', 'success');
+
   await loadCalendarList();
   await fetchAllEvents();
   renderCalendar();
   startAutoRefresh();
-  // Programmer le refresh automatique avant expiration
   scheduleTokenRefresh();
 }
 
-async function onTokenReceived(token, expiresIn) {
-  saveSession(token, expiresIn);
-  await connectWithToken(token);
-  // Si c'était un refresh silencieux, pas de toast
-  if (!state._silentRefresh) showToast('✓ Connecté à Google Agenda', 'success');
-  state._silentRefresh = false;
-}
-
-// Programmer un refresh automatique 5 minutes avant expiration
+// Programmer un refresh automatique 5 min avant expiration
 function scheduleTokenRefresh() {
   const saved = loadSession();
   if (!saved || saved.expired) return;
-  const msUntilExpiry = saved.expiry - Date.now();
-  const msUntilRefresh = msUntilExpiry - (5 * 60 * 1000); // 5 min avant
-  if (msUntilRefresh <= 0) {
-    silentRefresh(); return;
-  }
+  const delay = (saved.expiry - Date.now()) - (5 * 60 * 1000);
+  if (delay <= 0) { window.location.href = buildOAuthUrl('none'); return; }
   setTimeout(() => {
-    state._silentRefresh = true;
-    silentRefresh();
-  }, msUntilRefresh);
+    sessionStorage.setItem('gcal_refresh_tried', '1');
+    window.location.href = buildOAuthUrl('none');
+  }, delay);
 }
 
 // ═══════════════════════════════════════════
@@ -1126,7 +1110,7 @@ function handleAuth() {
     showToast('⚙️ Configurez vos clés API dans le fichier', 'error'); return;
   }
   // Redirection complète — aucun popup !
-  window.location.href = buildOAuthUrl();
+  window.location.href = buildOAuthUrl('select_account');
 }
 
 function updateAuthUI() {
