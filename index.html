@@ -868,26 +868,56 @@ const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','A
 const DAYS_LONG = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
 
 // ═══════════════════════════════════════════
-//   PERSISTANCE SESSION (survit au F5)
+//   PERSISTANCE — localStorage (permanent)
+//
+//   Token   : gcal_session  → survit aux redémarrages
+//   Prefs   : gcal_prefs    → agendas sélectionnés + défaut
+//
+//   Le token OAuth expire après ~1h mais on
+//   détecte l'expiration et on redirige vers
+//   Google silencieusement pour en obtenir un
+//   nouveau (sans interaction utilisateur si
+//   le compte est déjà connecté dans Silk).
 // ═══════════════════════════════════════════
 const SESSION_KEY = 'gcal_session';
+const PREFS_KEY   = 'gcal_prefs';
 
 function saveSession(token, expiresIn) {
   const expiry = Date.now() + (parseInt(expiresIn) - 60) * 1000;
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ token, expiry }));
+  localStorage.setItem(SESSION_KEY, JSON.stringify({ token, expiry }));
 }
 
 function loadSession() {
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
+    const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const { token, expiry } = JSON.parse(raw);
-    if (Date.now() >= expiry) { sessionStorage.removeItem(SESSION_KEY); return null; }
-    return token;
+    // Token encore valide ?
+    if (Date.now() < expiry) return { token, expiry, expired: false };
+    // Token expiré — on le garde pour tenter un refresh silencieux
+    return { token, expiry, expired: true };
   } catch { return null; }
 }
 
-function clearSession() { sessionStorage.removeItem(SESSION_KEY); }
+function clearSession() { localStorage.removeItem(SESSION_KEY); }
+
+// ── Préférences agendas ──
+function savePrefs() {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({
+      selectedCalIds: [...state.selectedCalIds],
+      defaultCalId:   state.defaultCalId,
+    }));
+  } catch(e) {}
+}
+
+function loadPrefs() {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch { return null; }
+}
 
 // ═══════════════════════════════════════════
 //   ÉMOJI DANS LA DESCRIPTION GOOGLE
@@ -991,40 +1021,84 @@ async function checkAuthOnLoad() {
     return;
   }
 
-  // 2. Session existante en sessionStorage ?
+  // 2. Session existante dans localStorage ?
   const saved = loadSession();
   if (saved) {
-    try {
-      const test = await fetch(
-        'https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=1',
-        { headers: { Authorization: 'Bearer ' + saved } }
-      );
-      if (test.ok) {
-        state.accessToken     = saved;
-        state.isAuthenticated = true;
-        updateAuthUI();
-        showToast('✓ Reconnecté automatiquement', 'success');
-        await loadCalendarList();
-        await fetchAllEvents();
-        renderCalendar();
-        startAutoRefresh();
-        return;
-      }
-    } catch(e) { /* token expiré */ }
-    clearSession();
+    if (!saved.expired) {
+      // Token encore valide → connexion directe
+      try {
+        const test = await fetch(
+          'https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=1',
+          { headers: { Authorization: 'Bearer ' + saved.token } }
+        );
+        if (test.ok) {
+          await connectWithToken(saved.token);
+          return;
+        }
+      } catch(e) {}
+    }
+    // Token expiré ou invalide → refresh silencieux
+    // Google reconnecte automatiquement si l'utilisateur est
+    // déjà connecté dans Silk (prompt=none)
+    silentRefresh();
   }
 }
 
-async function onTokenReceived(token, expiresIn) {
+// Refresh silencieux : redirect sans écran de connexion Google
+// Si le compte est connu de Silk, ça revient immédiatement avec un nouveau token
+function silentRefresh() {
+  const params = new URLSearchParams({
+    client_id:     GOOGLE_CONFIG.clientId,
+    redirect_uri:  getRedirectUri(),
+    response_type: 'token',
+    scope:         GOOGLE_CONFIG.scopes,
+    prompt:        'none',  // ← aucune interaction utilisateur
+    include_granted_scopes: 'true',
+  });
+  window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+}
+
+async function connectWithToken(token) {
   state.accessToken     = token;
   state.isAuthenticated = true;
-  saveSession(token, expiresIn);
   updateAuthUI();
-  showToast('✓ Connecté à Google Agenda', 'success');
+  // Restaurer les préférences sauvegardées
+  const prefs = loadPrefs();
+  if (prefs) {
+    state.defaultCalId = prefs.defaultCalId || 'primary';
+    // Les IDs cochés seront appliqués après le chargement de la liste
+    state._savedSelectedIds = new Set(prefs.selectedCalIds || []);
+  }
+  showToast('✓ Reconnecté automatiquement', 'success');
   await loadCalendarList();
   await fetchAllEvents();
   renderCalendar();
   startAutoRefresh();
+  // Programmer le refresh automatique avant expiration
+  scheduleTokenRefresh();
+}
+
+async function onTokenReceived(token, expiresIn) {
+  saveSession(token, expiresIn);
+  await connectWithToken(token);
+  // Si c'était un refresh silencieux, pas de toast
+  if (!state._silentRefresh) showToast('✓ Connecté à Google Agenda', 'success');
+  state._silentRefresh = false;
+}
+
+// Programmer un refresh automatique 5 minutes avant expiration
+function scheduleTokenRefresh() {
+  const saved = loadSession();
+  if (!saved || saved.expired) return;
+  const msUntilExpiry = saved.expiry - Date.now();
+  const msUntilRefresh = msUntilExpiry - (5 * 60 * 1000); // 5 min avant
+  if (msUntilRefresh <= 0) {
+    silentRefresh(); return;
+  }
+  setTimeout(() => {
+    state._silentRefresh = true;
+    silentRefresh();
+  }, msUntilRefresh);
 }
 
 // ═══════════════════════════════════════════
@@ -1036,6 +1110,7 @@ function handleAuth() {
     fetch('https://oauth2.googleapis.com/revoke?token=' + state.accessToken, { method: 'POST' })
       .catch(() => {});
     clearSession();
+    // On garde les prefs (agendas, défaut) pour la prochaine connexion
     stopAutoRefresh();
     state.isAuthenticated = false;
     state.accessToken     = null;
@@ -1077,7 +1152,19 @@ async function loadCalendarList() {
     if (!resp.ok) return;
     const data = await resp.json();
     state.calendars = data.items || [];
-    state.calendars.forEach(c => state.selectedCalIds.add(c.id));
+    // Restaurer la sélection sauvegardée, sinon tout cocher
+    if (state._savedSelectedIds && state._savedSelectedIds.size > 0) {
+      // Ne cocher que les IDs qui existent encore dans la liste
+      state.calendars.forEach(c => {
+        if (state._savedSelectedIds.has(c.id)) state.selectedCalIds.add(c.id);
+      });
+      // Si aucun agenda connu ne correspond, tout cocher par défaut
+      if (state.selectedCalIds.size === 0)
+        state.calendars.forEach(c => state.selectedCalIds.add(c.id));
+      state._savedSelectedIds = null;
+    } else {
+      state.calendars.forEach(c => state.selectedCalIds.add(c.id));
+    }
     renderAgendaList();
     updateAgendaBadge();
   } catch(e) { console.error('loadCalendarList', e); }
@@ -1132,7 +1219,8 @@ function renderAgendaList() {
 
 function setDefaultCalendar(calId) {
   state.defaultCalId = calId;
-  renderAgendaList(); // redessiner avec la nouvelle étoile
+  savePrefs(); // ← sauvegarder
+  renderAgendaList();
   showToast('✓ Calendrier par défaut mis à jour', 'success');
 }
 
@@ -1148,18 +1236,21 @@ function toggleAgenda(calId, color, itemEl) {
     box.textContent = '✓';
   }
   updateAgendaBadge();
+  savePrefs(); // ← sauvegarder la sélection
   fetchAllEvents().then(renderCalendar);
 }
 
 function selectAllAgendas() {
   state.calendars.forEach(c => state.selectedCalIds.add(c.id));
   renderAgendaList(); updateAgendaBadge();
+  savePrefs();
   fetchAllEvents().then(renderCalendar);
 }
 
 function deselectAllAgendas() {
   state.selectedCalIds.clear();
   renderAgendaList(); updateAgendaBadge();
+  savePrefs();
   state.events = {}; renderCalendar();
 }
 
