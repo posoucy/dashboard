@@ -917,20 +917,58 @@ function buildDescWithEmoji(userDesc, emoji) {
 }
 
 // ═══════════════════════════════════════════
-//   GOOGLE API — Chargement
+//   AUTHENTIFICATION PAR REDIRECTION
+//   (sans popup — compatible Fully Kiosk)
+//
+//   Flux : clic → redirection Google → retour
+//   sur cette page avec token dans l'URL hash
+//
+//   ⚠️  Dans Google Console, ajoutez l'URL
+//   de CETTE PAGE dans "URI de redirection
+//   autorisés" (pas seulement les origines JS)
 // ═══════════════════════════════════════════
-let gapiLoaded = false, gisLoaded = false, tokenClient = null;
+
+// URL de redirection = cette page même, sans le hash
+function getRedirectUri() {
+  return window.location.origin + window.location.pathname;
+}
+
+// Construire l'URL Google OAuth (flux implicite par redirection)
+function buildOAuthUrl() {
+  const params = new URLSearchParams({
+    client_id:     GOOGLE_CONFIG.clientId,
+    redirect_uri:  getRedirectUri(),
+    response_type: 'token',
+    scope:         GOOGLE_CONFIG.scopes,
+    prompt:        'select_account',
+    include_granted_scopes: 'true',
+  });
+  return 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+}
+
+// Lire le token dans le hash de l'URL après retour de Google
+function parseTokenFromHash() {
+  const hash = window.location.hash.substring(1);
+  if (!hash) return null;
+  const params = new URLSearchParams(hash);
+  const token  = params.get('access_token');
+  const expiry = params.get('expires_in');
+  if (!token) return null;
+  return { token, expiresIn: expiry || 3599 };
+}
+
+// Nettoyer le hash de l'URL (discret, sans rechargement)
+function clearUrlHash() {
+  history.replaceState(null, '', window.location.pathname + window.location.search);
+}
 
 function loadGoogleAPI() {
-  const s1 = document.createElement('script');
-  s1.src = 'https://apis.google.com/js/api.js';
-  s1.onload = () => gapi.load('client', initGapiClient);
-  document.head.appendChild(s1);
-
-  const s2 = document.createElement('script');
-  s2.src = 'https://accounts.google.com/gsi/client';
-  s2.onload = initGIS;
-  document.head.appendChild(s2);
+  // On charge seulement gapi pour l'initialisation de la clé API
+  // (plus besoin de GIS — l'auth se fait par redirect)
+  const s = document.createElement('script');
+  s.src = 'https://apis.google.com/js/api.js';
+  s.onload = () => gapi.load('client', initGapiClient);
+  document.head.appendChild(s);
 }
 
 async function initGapiClient() {
@@ -940,34 +978,28 @@ async function initGapiClient() {
       discoveryDocs: [GOOGLE_CONFIG.discoveryDoc],
     });
   } catch(e) { /* mode dégradé */ }
-  gapiLoaded = true;
-  checkBothReady();
+  await checkAuthOnLoad();
 }
 
-function initGIS() {
-  try {
-    tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CONFIG.clientId,
-      scope:     GOOGLE_CONFIG.scopes,
-      callback:  onTokenReceived,
-    });
-  } catch(e) { console.error('GIS init failed', e); }
-  gisLoaded = true;
-  checkBothReady();
-}
+// Vérifié à chaque chargement de page
+async function checkAuthOnLoad() {
+  // 1. Token qui revient de Google dans le hash ?
+  const fromGoogle = parseTokenFromHash();
+  if (fromGoogle) {
+    clearUrlHash();
+    await onTokenReceived(fromGoogle.token, fromGoogle.expiresIn);
+    return;
+  }
 
-// Appelé quand les deux libs sont prêtes — reconnexion silencieuse
-async function checkBothReady() {
-  if (!gapiLoaded || !gisLoaded) return;
+  // 2. Session existante en sessionStorage ?
   const saved = loadSession();
   if (saved) {
     try {
       const test = await fetch(
         'https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=1',
-        { headers: { Authorization: `Bearer ${saved}` } }
+        { headers: { Authorization: 'Bearer ' + saved } }
       );
       if (test.ok) {
-        gapi.client.setToken({ access_token: saved });
         state.accessToken     = saved;
         state.isAuthenticated = true;
         updateAuthUI();
@@ -978,17 +1010,15 @@ async function checkBothReady() {
         startAutoRefresh();
         return;
       }
-    } catch { /* token invalide */ }
+    } catch(e) { /* token expiré */ }
     clearSession();
   }
 }
 
-async function onTokenReceived(resp) {
-  if (resp.error) { showToast('Connexion annulée', 'error'); return; }
-  gapi.client.setToken(resp);
-  state.accessToken     = resp.access_token;
+async function onTokenReceived(token, expiresIn) {
+  state.accessToken     = token;
   state.isAuthenticated = true;
-  saveSession(resp.access_token, resp.expires_in || 3599);
+  saveSession(token, expiresIn);
   updateAuthUI();
   showToast('✓ Connecté à Google Agenda', 'success');
   await loadCalendarList();
@@ -1002,8 +1032,9 @@ async function onTokenReceived(resp) {
 // ═══════════════════════════════════════════
 function handleAuth() {
   if (state.isAuthenticated) {
-    google?.accounts?.oauth2?.revoke?.(state.accessToken, () => {});
-    gapi?.client?.setToken?.('');
+    // Révoquer le token via l'API de révocation Google
+    fetch('https://oauth2.googleapis.com/revoke?token=' + state.accessToken, { method: 'POST' })
+      .catch(() => {});
     clearSession();
     stopAutoRefresh();
     state.isAuthenticated = false;
@@ -1019,7 +1050,8 @@ function handleAuth() {
   if (GOOGLE_CONFIG.clientId === 'VOTRE_CLIENT_ID.apps.googleusercontent.com') {
     showToast('⚙️ Configurez vos clés API dans le fichier', 'error'); return;
   }
-  tokenClient?.requestAccessToken({ prompt: '' });
+  // Redirection complète — aucun popup !
+  window.location.href = buildOAuthUrl();
 }
 
 function updateAuthUI() {
