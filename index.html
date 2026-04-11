@@ -643,6 +643,91 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
+    /* ── Bouton paramètres météo ── */
+    .btn-weather-settings {
+      width: 26px; height: 26px; border-radius: 50%;
+      background: rgba(255,253,247,.08);
+      border: 1px solid rgba(255,253,247,.15);
+      color: rgba(255,253,247,.4);
+      cursor: pointer; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; transition: all .2s;
+    }
+    .btn-weather-settings:hover {
+      background: rgba(255,253,247,.18);
+      color: rgba(255,253,247,.9);
+      transform: rotate(45deg);
+    }
+
+    /* ── Panneau paramètres ville ── */
+    .weather-settings-panel {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(.95);
+      background: var(--surface); border-radius: var(--radius);
+      box-shadow: var(--shadow-lg); border: 1px solid var(--border);
+      padding: 24px; width: 340px; z-index: 400;
+      opacity: 0; pointer-events: none;
+      transition: opacity .22s, transform .22s cubic-bezier(.34,1.2,.64,1);
+    }
+    .weather-settings-panel.open {
+      opacity: 1; pointer-events: all;
+      transform: translate(-50%, -50%) scale(1);
+    }
+    .weather-settings-overlay {
+      position: fixed; inset: 0; z-index: 399;
+      background: rgba(45,42,36,.35); backdrop-filter: blur(4px);
+      opacity: 0; pointer-events: none; transition: opacity .22s;
+    }
+    .weather-settings-overlay.open { opacity: 1; pointer-events: all; }
+    .ws-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.3rem; font-weight: 600; color: var(--text);
+      margin-bottom: 6px;
+    }
+    .ws-subtitle {
+      font-size: 0.78rem; color: var(--text-muted); margin-bottom: 18px;
+    }
+    .ws-input-wrap {
+      display: flex; gap: 8px; align-items: center; margin-bottom: 14px;
+    }
+    .ws-input {
+      flex: 1; padding: 10px 14px;
+      border-radius: var(--radius-sm); border: 1.5px solid var(--border);
+      background: var(--surface2); color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+      outline: none; transition: border-color .18s;
+    }
+    .ws-input:focus { border-color: var(--accent); }
+    .ws-btn-search {
+      padding: 10px 16px; border-radius: var(--radius-sm);
+      background: var(--accent); color: var(--surface);
+      border: none; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600;
+      transition: all .18s; white-space: nowrap;
+    }
+    .ws-btn-search:hover { background: #5a6c4e; }
+    .ws-btn-search:disabled { opacity: .55; cursor: not-allowed; }
+    .ws-result {
+      font-size: 0.82rem; color: var(--text-muted);
+      min-height: 20px; margin-bottom: 14px;
+    }
+    .ws-result.ok  { color: var(--accent); }
+    .ws-result.err { color: #c0392b; }
+    .ws-footer { display: flex; gap: 8px; justify-content: flex-end; }
+    .ws-btn-cancel {
+      padding: 9px 18px; border-radius: 50px;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-muted); cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 0.88rem;
+      transition: all .15s;
+    }
+    .ws-btn-cancel:hover { border-color: var(--accent); color: var(--accent); }
+    .ws-current {
+      font-size: 0.78rem; color: var(--text-muted);
+      margin-bottom: 16px; padding: 8px 12px;
+      background: var(--surface2); border-radius: var(--radius-sm);
+      display: flex; align-items: center; gap: 6px;
+    }
+
     /* ══════════════════════════════════════
        MODE PORTRAIT (Fire HD 8 = 800px large)
        En portrait la largeur est ~800px — on
@@ -738,7 +823,7 @@
 
     <!-- Météo compacte -->
     <div class="weather-now" id="weather-now">
-      <div class="weather-loading">Localisation…</div>
+      <div class="weather-loading">Météo…</div>
     </div>
 
     <!-- Prévisions -->
@@ -750,6 +835,9 @@
       <span id="sync-label"></span>
     </div>
 
+    <!-- Bouton paramètres météo -->
+    <button class="btn-weather-settings" onclick="openWeatherSettings()" title="Changer la ville météo">⚙</button>
+
     <!-- Bouton déconnexion — icône discrète -->
     <button class="btn-auth-disconnect" id="btn-disconnect"
       onclick="handleAuth()" title="Déconnexion">
@@ -759,6 +847,28 @@
         <line x1="21" y1="12" x2="9" y2="12"/>
       </svg>
     </button>
+  </div>
+
+  <!-- ══ PANNEAU PARAMÈTRES MÉTÉO ══ -->
+  <div class="weather-settings-overlay" id="ws-overlay" onclick="closeWeatherSettings()"></div>
+  <div class="weather-settings-panel" id="ws-panel">
+    <div class="ws-title">📍 Ville pour la météo</div>
+    <div class="ws-subtitle">Entrez le nom d'une ville pour obtenir sa météo.</div>
+    <div class="ws-current" id="ws-current">
+      <span>📍</span><span id="ws-current-city">Non défini</span>
+    </div>
+    <div class="ws-input-wrap">
+      <input class="ws-input" id="ws-city-input" type="text"
+        placeholder="Ex : Montréal, Paris, Lyon…"
+        onkeydown="if(event.key==='Enter') searchWeatherCity()"/>
+      <button class="ws-btn-search" id="ws-btn-search" onclick="searchWeatherCity()">
+        Rechercher
+      </button>
+    </div>
+    <div class="ws-result" id="ws-result"></div>
+    <div class="ws-footer">
+      <button class="ws-btn-cancel" onclick="closeWeatherSettings()">Fermer</button>
+    </div>
   </div>
 
   <!-- HEADER masqué — bouton connexion uniquement visible si non connecté -->
@@ -1996,22 +2106,105 @@ const WMO_DESC = {
 };
 const DAYS_SHORT = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
 
+// ═══════════════════════════════════════════
+//   PARAMÈTRES MÉTÉO — ville personnalisée
+// ═══════════════════════════════════════════
+const WEATHER_CITY_KEY = 'gcal_weather_city';
+
+function saveWeatherCity(city) {
+  try { localStorage.setItem(WEATHER_CITY_KEY, JSON.stringify(city)); } catch(e) {}
+}
+function loadWeatherCity() {
+  try {
+    const raw = localStorage.getItem(WEATHER_CITY_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function openWeatherSettings() {
+  const saved = loadWeatherCity();
+  document.getElementById('ws-current-city').textContent =
+    saved ? saved.name + ' (' + saved.lat.toFixed(2) + ', ' + saved.lon.toFixed(2) + ')' : 'Détection automatique par IP';
+  document.getElementById('ws-city-input').value = saved ? saved.name : '';
+  document.getElementById('ws-result').textContent = '';
+  document.getElementById('ws-result').className = 'ws-result';
+  document.getElementById('ws-overlay').classList.add('open');
+  document.getElementById('ws-panel').classList.add('open');
+  setTimeout(() => document.getElementById('ws-city-input').focus(), 200);
+}
+
+function closeWeatherSettings() {
+  document.getElementById('ws-overlay').classList.remove('open');
+  document.getElementById('ws-panel').classList.remove('open');
+}
+
+async function searchWeatherCity() {
+  const input   = document.getElementById('ws-city-input').value.trim();
+  const resultEl = document.getElementById('ws-result');
+  const btn     = document.getElementById('ws-btn-search');
+  if (!input) { resultEl.textContent = 'Entrez un nom de ville.'; resultEl.className = 'ws-result err'; return; }
+
+  btn.disabled = true; btn.textContent = '⏳ Recherche…';
+  resultEl.textContent = ''; resultEl.className = 'ws-result';
+
+  try {
+    // Geocoding via Open-Meteo (gratuit, sans clé)
+    const geoResp = await fetch(
+      'https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(input) + '&count=1&language=fr&format=json'
+    );
+    const geoData = await geoResp.json();
+    if (!geoData.results || !geoData.results.length) {
+      resultEl.textContent = '❌ Ville introuvable. Essayez un nom plus précis.';
+      resultEl.className = 'ws-result err';
+      btn.disabled = false; btn.textContent = 'Rechercher';
+      return;
+    }
+    const city = geoData.results[0];
+    const saved = {
+      name:    city.name + (city.admin1 ? ', ' + city.admin1 : '') + ', ' + city.country,
+      lat:     city.latitude,
+      lon:     city.longitude,
+      tz:      city.timezone || 'auto',
+    };
+    saveWeatherCity(saved);
+    document.getElementById('ws-current-city').textContent = saved.name;
+    resultEl.textContent = '✓ Ville sauvegardée : ' + saved.name;
+    resultEl.className = 'ws-result ok';
+    // Recharger la météo avec la nouvelle ville
+    await loadWeather();
+  } catch(e) {
+    resultEl.textContent = '❌ Erreur de recherche. Vérifiez votre connexion.';
+    resultEl.className = 'ws-result err';
+  }
+  btn.disabled = false; btn.textContent = 'Rechercher';
+}
+
 async function loadWeather() {
   const nowEl  = document.getElementById('weather-now');
   const fcEl   = document.getElementById('weather-forecast');
   try {
-    const pos = await new Promise(function(res, rej) {
-      navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000 });
-    });
-    const lat = pos.coords.latitude;
-    const lon = pos.coords.longitude;
+    let lat, lon, cityName = '';
 
-    let cityName = '';
-    try {
-      const geo = await fetch('https://nominatim.openstreetmap.org/reverse?lat=' + lat + '&lon=' + lon + '&format=json');
-      const geoData = await geo.json();
-      cityName = geoData.address && (geoData.address.city || geoData.address.town || geoData.address.village || '');
-    } catch(e) {}
+    // 1. Ville définie manuellement par l'utilisateur ?
+    const savedCity = loadWeatherCity();
+    if (savedCity) {
+      lat      = savedCity.lat;
+      lon      = savedCity.lon;
+      cityName = savedCity.name;
+    } else {
+      // 2. Détection automatique par IP (sans permission)
+      try {
+        const ipResp = await fetch('http://ip-api.com/json/?fields=lat,lon,city,status');
+        const ipData = await ipResp.json();
+        if (ipData.status === 'success') {
+          lat = ipData.lat; lon = ipData.lon; cityName = ipData.city || '';
+        }
+      } catch(e) {}
+      // 3. Fallback Montréal si tout échoue
+      if (!lat || !lon) {
+        lat = 45.5017; lon = -73.5673; cityName = 'Montréal';
+      }
+    }
 
     const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon
       + '&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code'
