@@ -52,114 +52,91 @@
     .app { position: relative; z-index: 1; width: 100%; max-width: 100%; }
 
     /* ══════════════════════════════════════
-       BARRE DATE / HEURE / MÉTÉO
+       LIGNE 1 — DATE / HEURE / MÉTÉO / DÉCONNEXION
     ══════════════════════════════════════ */
     .datetime-bar {
       background: var(--text);
-      border-radius: var(--radius);
-      padding: 16px 24px;
-      margin-bottom: 10px;
+      border-radius: var(--radius) var(--radius) 0 0;
+      padding: 8px 16px;
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 20px;
+      gap: 14px;
       box-shadow: var(--shadow-lg);
+      min-height: 0;
     }
-    /* Colonne gauche : heure + date */
-    .datetime-left {}
+
+    /* Heure + date en ligne */
+    .datetime-left {
+      display: flex; align-items: baseline; gap: 10px; flex-shrink: 0;
+    }
     .datetime-time {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 3.6rem;
-      font-weight: 300;
-      color: var(--today-fg);
-      line-height: 1;
-      letter-spacing: -2px;
+      font-size: 2rem; font-weight: 300;
+      color: var(--today-fg); line-height: 1; letter-spacing: -1px;
     }
     .datetime-date {
-      font-size: 0.95rem;
-      color: rgba(255,253,247,.6);
-      margin-top: 4px;
-      font-weight: 400;
-      letter-spacing: .02em;
+      font-size: 0.82rem; color: rgba(255,253,247,.55);
+      font-weight: 400; white-space: nowrap;
     }
 
-    /* Séparateur vertical */
     .datetime-sep {
-      width: 1px;
-      align-self: stretch;
-      background: rgba(255,253,247,.15);
-      flex-shrink: 0;
+      width: 1px; height: 24px;
+      background: rgba(255,253,247,.15); flex-shrink: 0;
     }
 
-    /* Colonne météo actuelle */
+    /* Météo compacte */
     .weather-now {
-      display: flex; align-items: center; gap: 12px;
-      flex-shrink: 0;
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
     }
-    .weather-icon { font-size: 2.6rem; line-height: 1; }
+    .weather-icon { font-size: 1.5rem; line-height: 1; }
     .weather-temp {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 2.8rem; font-weight: 600;
+      font-size: 1.6rem; font-weight: 600;
       color: var(--today-fg); line-height: 1;
     }
     .weather-now-right {}
     .weather-desc {
-      font-size: 0.8rem;
-      color: rgba(255,253,247,.65);
-      margin-top: 2px;
+      font-size: 0.72rem; color: rgba(255,253,247,.6);
     }
     .weather-details-inline {
-      display: flex; gap: 12px; margin-top: 4px;
+      display: flex; gap: 8px; margin-top: 1px;
     }
     .weather-detail-item {
-      font-size: 0.75rem;
-      color: rgba(255,253,247,.5);
-      display: flex; align-items: center; gap: 3px;
+      font-size: 0.68rem; color: rgba(255,253,247,.45);
+      display: flex; align-items: center; gap: 2px;
     }
     .weather-location {
-      font-size: 0.72rem;
-      color: rgba(255,253,247,.4);
-      margin-top: 3px;
-      display: flex; align-items: center; gap: 4px;
+      font-size: 0.65rem; color: rgba(255,253,247,.35);
+      margin-top: 1px; display: flex; align-items: center; gap: 3px;
     }
     .weather-loading {
-      font-size: 0.8rem;
-      color: rgba(255,253,247,.45);
-      padding: 4px 0;
+      font-size: 0.75rem; color: rgba(255,253,247,.4); padding: 2px 0;
     }
 
-    /* Prévisions horizontales */
+    /* Prévisions horizontales compactes */
     .weather-forecast {
-      display: flex; gap: 10px; align-items: flex-start;
+      display: flex; gap: 8px; align-items: center;
       border-left: 1px solid rgba(255,253,247,.12);
-      padding-left: 18px;
+      padding-left: 12px; flex: 1;
     }
     .forecast-col {
       display: flex; flex-direction: column;
-      align-items: center; gap: 3px;
+      align-items: center; gap: 1px;
     }
-    .forecast-day  { font-size: 0.68rem; color: rgba(255,253,247,.45); }
-    .forecast-icon { font-size: 1.1rem; line-height: 1; }
-    .forecast-temp { font-size: 0.78rem; font-weight: 600; color: var(--today-fg); }
-    .forecast-min  { font-size: 0.7rem; color: rgba(255,253,247,.4); }
+    .forecast-day  { font-size: 0.6rem; color: rgba(255,253,247,.4); }
+    .forecast-icon { font-size: 0.95rem; line-height: 1; }
+    .forecast-temp { font-size: 0.68rem; font-weight: 600; color: var(--today-fg); }
+    .forecast-min  { font-size: 0.62rem; color: rgba(255,253,247,.35); }
 
-    /* ══════════════════════════════════════
-       HEADER (titre + boutons)
-    ══════════════════════════════════════ */
-    header {
-      display: flex; align-items: center; gap: 12px;
-      margin-bottom: 10px;
-    }
-    .header-left { flex: 1; }
-    .app-subtitle { font-size: 0.78rem; color: var(--text-muted); margin-top: 0; }
-
+    /* Sync dot dans la barre sombre */
     .sync-bar {
-      display: none; align-items: center; gap: 6px;
-      margin-top: 4px; font-size: 0.72rem; color: var(--text-muted);
+      display: none; align-items: center; gap: 5px;
+      font-size: 0.65rem; color: rgba(255,253,247,.4);
+      flex-shrink: 0;
     }
     .sync-bar.visible { display: flex; }
     .sync-dot {
-      width: 6px; height: 6px; border-radius: 50%;
+      width: 5px; height: 5px; border-radius: 50%;
       background: var(--accent); flex-shrink: 0;
       animation: syncpulse 2.5s ease-in-out infinite;
     }
@@ -171,8 +148,27 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    /* Bouton déconnexion — très discret, icône seule */
+    .btn-auth-disconnect {
+      display: none;
+      width: 30px; height: 30px; border-radius: 50%;
+      background: rgba(255,253,247,.08);
+      border: 1px solid rgba(255,253,247,.15);
+      color: rgba(255,253,247,.45);
+      cursor: pointer; flex-shrink: 0;
+      align-items: center; justify-content: center;
+      transition: all .2s; margin-left: auto;
+    }
+    .btn-auth-disconnect.visible { display: flex; }
+    .btn-auth-disconnect:hover {
+      background: rgba(192,57,43,.3);
+      border-color: rgba(192,57,43,.5);
+      color: #f0a;
+      color: #ff8a80;
+    }
+    .btn-auth-disconnect svg { width: 14px; height: 14px; }
 
+    /* Bouton connexion principal (plein) */
     .btn-auth {
       display: flex; align-items: center; gap: 8px;
       padding: 10px 18px; border-radius: 50px;
@@ -185,22 +181,31 @@
     .btn-auth:hover { background: var(--accent); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
     .btn-auth svg { width: 18px; height: 18px; }
 
-    /* ── Bouton agendas ── */
+    /* ══════════════════════════════════════
+       HEADER — masqué, réduit à zéro
+       (tout est dans datetime-bar + cal-nav)
+    ══════════════════════════════════════ */
+    header { display: none; }
+    .header-left {}
+    .app-subtitle { font-size: 0.78rem; color: var(--text-muted); margin-top: 0; }
+    .header-actions { display: none; }
+
+    /* ── Bouton agendas — dans cal-nav ── */
     .btn-agendas {
-      display: none; align-items: center; gap: 8px;
-      padding: 10px 16px; border-radius: 50px;
-      background: var(--surface); border: 1.5px solid var(--border);
-      color: var(--text); cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 500;
-      transition: all .2s; box-shadow: var(--shadow); position: relative;
+      display: none; align-items: center; gap: 6px;
+      padding: 7px 12px; border-radius: 50px;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-muted); cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500;
+      transition: all .2s; position: relative;
     }
     .btn-agendas.visible { display: flex; }
     .btn-agendas:hover { border-color: var(--accent); color: var(--accent); }
     .agenda-badge {
       background: var(--accent); color: var(--today-fg);
-      font-size: 0.65rem; font-weight: 700; min-width: 16px; height: 16px;
+      font-size: 0.6rem; font-weight: 700; min-width: 14px; height: 14px;
       border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      padding: 0 3px;
+      padding: 0 2px;
     }
 
     /* ── Dropdown agendas ── */
@@ -256,39 +261,43 @@
     /* ── Calendar card ── */
     .calendar-card {
       background: var(--surface);
-      border-radius: var(--radius);
+      border-radius: 0 0 var(--radius) var(--radius);
       box-shadow: var(--shadow-lg);
       overflow: hidden;
       border: 1px solid var(--border);
+      border-top: none;
     }
     .cal-nav {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 14px 18px;
+      padding: 7px 14px;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
+      gap: 8px;
     }
     .month-label {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 1.6rem; font-weight: 600; letter-spacing: -0.3px;
-      color: var(--text);
+      font-size: 1.3rem; font-weight: 600; letter-spacing: -0.2px;
+      color: var(--text); flex-shrink: 0;
     }
-    .nav-controls { display: flex; align-items: center; gap: 8px; }
+    .nav-controls { display: flex; align-items: center; gap: 6px; flex: 1; }
     .btn-nav {
-      width: 42px; height: 42px; border-radius: 50%;
+      width: 36px; height: 36px; border-radius: 50%;
       background: var(--surface2); border: 1px solid var(--border);
       color: var(--text); cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1rem; transition: all .2s;
+      font-size: 0.9rem; transition: all .2s; flex-shrink: 0;
     }
     .btn-nav:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); transform: scale(1.07); }
     .btn-today {
-      padding: 9px 16px; border-radius: 50px;
+      padding: 7px 14px; border-radius: 50px;
       background: var(--surface2); border: 1px solid var(--border);
       color: var(--text); cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-size: 0.83rem; font-weight: 500;
+      font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500;
       transition: all .2s;
     }
     .btn-today:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    /* Agendas dropdown dans cal-nav */
+    .cal-nav-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
     /* ── Day names ── */
     .cal-days-header {
@@ -311,8 +320,9 @@
     }
 
     .day-cell {
-      min-height: 88px;
-      padding: 6px;
+      min-height: 0;
+      height: calc((100vh - 130px) / 6);
+      padding: 4px 6px;
       border-radius: var(--radius-sm);
       cursor: pointer;
       transition: background .18s, transform .15s;
@@ -578,72 +588,68 @@
        En portrait la largeur est ~800px — on
        réorganise la barre météo en colonne
     ══════════════════════════════════════ */
+    /* ══ PORTRAIT (≤ 800px) ══ */
     @media (max-width: 800px) {
-      body { padding: 8px 8px 80px; }
-
-      /* Barre date/météo : date à gauche, météo à droite — sur une seule ligne */
-      .datetime-bar {
-        flex-wrap: nowrap;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 14px;
-      }
-      .datetime-sep { display: block; }
-      .datetime-left { flex-shrink: 0; }
-      .datetime-time { font-size: 2.4rem; }
-      .datetime-date { font-size: 0.78rem; }
-
-      /* Météo compacte à droite */
-      .weather-now {
-        gap: 6px;
-        flex: 1;
-        min-width: 0;
-      }
-      .weather-icon { font-size: 1.7rem; }
-      .weather-temp { font-size: 1.7rem; }
-      .weather-desc { font-size: 0.68rem; }
-      .weather-details-inline { gap: 6px; }
-      .weather-detail-item { font-size: 0.65rem; }
-
-      /* Prévisions : réduire + cacher si trop serré */
-      .weather-forecast {
-        padding-left: 8px;
-        gap: 5px;
-      }
-      .forecast-icon { font-size: 0.85rem; }
-      .forecast-temp { font-size: 0.68rem; }
-      .forecast-min  { font-size: 0.62rem; }
-      .forecast-day  { font-size: 0.6rem; }
-
-      /* Calendrier : cellules plus petites */
-      .day-cell  { min-height: 70px; padding: 4px; margin: 1px; }
-      .day-num   { font-size: 0.9rem; width: 26px; height: 26px; }
-      .event-chip { font-size: 0.62rem; padding: 1px 4px; }
-      .chip-emoji { font-size: 0.68rem; }
-      .cal-nav    { padding: 10px 14px; }
-      .month-label { font-size: 1.3rem; }
-      .btn-nav    { width: 36px; height: 36px; font-size: 0.9rem; }
-      .btn-today  { padding: 7px 12px; font-size: 0.78rem; }
-      .cal-days-header { padding: 6px 8px 0; }
-      .cal-grid   { padding: 4px 6px 10px; }
-      .day-name   { font-size: 0.65rem; }
-
-      /* Header */
-      header { margin-bottom: 6px; }
-      .app-subtitle { font-size: 0.72rem; }
-      .btn-auth { padding: 9px 14px; font-size: 0.8rem; }
-      .btn-agendas { padding: 9px 12px; font-size: 0.8rem; }
-
-      /* Modal pleine largeur */
+      body { padding: 6px 6px 70px; }
+      .datetime-bar { padding: 6px 12px; gap: 10px; }
+      .datetime-time { font-size: 1.6rem; letter-spacing: -0.5px; }
+      .datetime-date { font-size: 0.73rem; }
+      .weather-icon  { font-size: 1.3rem; }
+      .weather-temp  { font-size: 1.4rem; }
+      .weather-desc  { font-size: 0.65rem; }
+      .weather-details-inline { gap: 5px; }
+      .weather-detail-item { font-size: 0.6rem; }
+      .forecast-icon { font-size: 0.8rem; }
+      .forecast-temp { font-size: 0.6rem; }
+      .forecast-min  { font-size: 0.56rem; }
+      .forecast-day  { font-size: 0.56rem; }
+      .day-cell  { height: auto; min-height: 72px; padding: 3px 4px; margin: 1px; }
+      .day-num   { font-size: 0.85rem; width: 24px; height: 24px; }
+      .event-chip { font-size: 0.6rem; padding: 1px 3px; }
+      .chip-emoji { font-size: 0.65rem; }
+      .month-label { font-size: 1.1rem; }
+      .btn-nav    { width: 32px; height: 32px; font-size: 0.85rem; }
+      .btn-today  { padding: 5px 10px; font-size: 0.73rem; }
+      .cal-days-header { padding: 4px 6px 0; }
+      .cal-grid   { padding: 3px 5px 8px; }
+      .day-name   { font-size: 0.62rem; padding: 4px 0; }
       .modal { max-width: 100%; border-radius: 16px; }
       .form-row { grid-template-columns: 1fr; gap: 0; }
-      .emoji-inline-grid { grid-template-columns: repeat(8, 1fr); }
     }
 
-    /* Portrait strict (moins de 530px de large — rare mais sécurisé) */
+    /* ══ PAYSAGE Fire HD 8 (800px hauteur, ≥ 900px largeur) ══ */
+    @media (min-width: 900px) and (max-height: 820px) {
+      body { padding: 0 0 60px; }
+      .datetime-bar { border-radius: var(--radius) var(--radius) 0 0; padding: 5px 14px; gap: 12px; }
+      .datetime-time { font-size: 1.5rem; }
+      .datetime-date { font-size: 0.7rem; }
+      .weather-icon  { font-size: 1.2rem; }
+      .weather-temp  { font-size: 1.3rem; }
+      .weather-desc  { font-size: 0.62rem; }
+      .weather-details-inline { gap: 4px; margin-top: 0; }
+      .weather-detail-item { font-size: 0.58rem; }
+      .forecast-icon { font-size: 0.8rem; }
+      .forecast-temp { font-size: 0.6rem; }
+      .forecast-min  { font-size: 0.55rem; }
+      .btn-auth-disconnect { width: 26px; height: 26px; }
+      .btn-auth-disconnect svg { width: 12px; height: 12px; }
+      /* Calendrier prend toute la hauteur restante */
+      .day-cell { height: calc((100vh - 115px) / 6); min-height: 0; padding: 3px 5px; margin: 1px; }
+      .day-num   { font-size: 0.85rem; width: 24px; height: 24px; margin-bottom: 2px; }
+      .event-chip { font-size: 0.62rem; padding: 1px 4px; margin-bottom: 1px; }
+      .chip-emoji { font-size: 0.65rem; }
+      .cal-nav    { padding: 5px 12px; }
+      .month-label { font-size: 1.1rem; }
+      .btn-nav    { width: 32px; height: 32px; font-size: 0.85rem; }
+      .btn-today  { padding: 5px 10px; font-size: 0.73rem; }
+      .cal-days-header { padding: 3px 8px 0; }
+      .cal-grid   { padding: 2px 6px 6px; }
+      .day-name   { font-size: 0.62rem; padding: 3px 0; }
+    }
+
+    /* Portrait strict < 530px */
     @media (max-width: 530px) {
       .weather-forecast { display: none; }
-      .datetime-time { font-size: 2.4rem; }
     }
   </style>
 </head>
@@ -651,9 +657,9 @@
 
 <div class="app">
 
-  <!-- ══ BARRE DATE / HEURE / MÉTÉO ══ -->
+  <!-- ══ LIGNE 1 : DATE / HEURE / MÉTÉO / DÉCONNEXION ══ -->
   <div class="datetime-bar">
-    <!-- Heure + date -->
+    <!-- Heure + date en ligne -->
     <div class="datetime-left">
       <div class="datetime-time" id="clock">00:00</div>
       <div class="datetime-date" id="clock-date">—</div>
@@ -661,39 +667,37 @@
 
     <div class="datetime-sep"></div>
 
-    <!-- Météo actuelle -->
+    <!-- Météo compacte -->
     <div class="weather-now" id="weather-now">
       <div class="weather-loading">Localisation…</div>
     </div>
 
     <!-- Prévisions -->
     <div class="weather-forecast" id="weather-forecast" style="display:none"></div>
+
+    <!-- Sync dot -->
+    <div class="sync-bar" id="sync-bar" style="margin-left:auto">
+      <span class="sync-dot" id="sync-dot"></span>
+      <span id="sync-label"></span>
+    </div>
+
+    <!-- Bouton déconnexion — icône discrète -->
+    <button class="btn-auth-disconnect" id="btn-disconnect"
+      onclick="handleAuth()" title="Déconnexion">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+    </button>
   </div>
 
-  <!-- ══ HEADER ══ -->
-  <header>
+  <!-- HEADER masqué — bouton connexion uniquement visible si non connecté -->
+  <header id="main-header" style="display:none; padding: 8px 12px; margin-bottom:0">
     <div class="header-left">
       <div class="app-subtitle" id="subtitle">Connectez-vous pour synchroniser avec Google Agenda</div>
-      <div class="sync-bar" id="sync-bar">
-        <span class="sync-dot" id="sync-dot"></span>
-        <span id="sync-label">Synchronisé</span>
-      </div>
     </div>
-    <div class="header-actions">
-      <div style="position:relative">
-        <button class="btn-agendas" id="btn-agendas" onclick="toggleAgendaDropdown()">
-          🗂 Agendas
-          <span class="agenda-badge" id="agenda-badge">0</span>
-        </button>
-        <div class="agenda-dropdown" id="agenda-dropdown">
-          <div class="agenda-dropdown-title">Mes agendas Google <span style="font-weight:400;opacity:.6;font-size:.68rem">— ★ = défaut</span></div>
-          <div id="agenda-list"><div class="spinner" style="width:20px;height:20px;margin:10px auto"></div></div>
-          <div class="agenda-dropdown-footer">
-            <button class="agenda-footer-btn" onclick="selectAllAgendas()">Tout cocher</button>
-            <button class="agenda-footer-btn" onclick="deselectAllAgendas()">Tout décocher</button>
-          </div>
-        </div>
-      </div>
+    <div>
       <button class="btn-auth" id="btn-auth" onclick="handleAuth()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
@@ -720,11 +724,27 @@
   <div>
     <div class="calendar-card">
         <div class="cal-nav">
-          <div class="month-label" id="month-label">—</div>
           <div class="nav-controls">
             <button class="btn-nav" onclick="changeMonth(-1)">&#8592;</button>
-            <button class="btn-today" onclick="goToToday()">Aujourd'hui</button>
+            <div class="month-label" id="month-label">—</div>
             <button class="btn-nav" onclick="changeMonth(1)">&#8594;</button>
+            <button class="btn-today" onclick="goToToday()">Aujourd'hui</button>
+          </div>
+          <!-- Bouton agendas intégré dans cal-nav -->
+          <div class="cal-nav-right">
+            <div style="position:relative">
+              <button class="btn-agendas" id="btn-agendas" onclick="toggleAgendaDropdown()">
+                🗂 <span class="agenda-badge" id="agenda-badge">0</span>
+              </button>
+              <div class="agenda-dropdown" id="agenda-dropdown">
+                <div class="agenda-dropdown-title">Mes agendas <span style="font-weight:400;opacity:.6;font-size:.68rem">— ★ = défaut</span></div>
+                <div id="agenda-list"><div class="spinner" style="width:20px;height:20px;margin:10px auto"></div></div>
+                <div class="agenda-dropdown-footer">
+                  <button class="agenda-footer-btn" onclick="selectAllAgendas()">Tout cocher</button>
+                  <button class="agenda-footer-btn" onclick="deselectAllAgendas()">Tout décocher</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="cal-days-header">
@@ -832,8 +852,8 @@
 //   CONFIG — Remplacez par vos vraies clés
 // ═══════════════════════════════════════════
 const GOOGLE_CONFIG = {
-  clientId:     '647348410681-90bses902v8ln2766frod7lt29jske7u.apps.googleusercontent.com',
-  apiKey:       'AIzaSyAlLIeuLNxQQ-ftsMNGX2pxz12FGKb8A8E',
+  clientId:     'VOTRE_CLIENT_ID.apps.googleusercontent.com',
+  apiKey:       'VOTRE_API_KEY',
   scopes:       'https://www.googleapis.com/auth/calendar',
   discoveryDoc: 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
 };
@@ -1115,12 +1135,32 @@ function handleAuth() {
 
 function updateAuthUI() {
   const auth = state.isAuthenticated;
+
+  // Notice d'authentification
   document.getElementById('auth-notice').style.display = auth ? 'none' : 'block';
-  document.getElementById('auth-btn-label').textContent = auth ? 'Déconnexion' : 'Se connecter';
-  document.getElementById('subtitle').textContent = auth
+
+  // Header principal : visible seulement si non connecté
+  const mainHeader = document.getElementById('main-header');
+  if (mainHeader) mainHeader.style.display = auth ? 'none' : 'flex';
+
+  // Subtitle
+  const sub = document.getElementById('subtitle');
+  if (sub) sub.textContent = auth
     ? '✓ Synchronisé avec Google Agenda'
     : 'Connectez-vous pour synchroniser avec Google Agenda';
+
+  // Bouton connexion dans header
+  const btnLabel = document.getElementById('auth-btn-label');
+  if (btnLabel) btnLabel.textContent = auth ? 'Déconnexion' : 'Se connecter';
+
+  // Bouton déconnexion discret dans la barre sombre
+  const btnDisconnect = document.getElementById('btn-disconnect');
+  if (btnDisconnect) btnDisconnect.classList.toggle('visible', auth);
+
+  // Bouton agendas dans cal-nav
   document.getElementById('btn-agendas').classList.toggle('visible', auth);
+
+  // Sync dot
   document.getElementById('sync-bar').classList.toggle('visible', auth);
 }
 
