@@ -71,11 +71,11 @@
     }
     .datetime-time {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 2rem; font-weight: 300;
+      font-size: 2.8rem; font-weight: 300;
       color: var(--today-fg); line-height: 1; letter-spacing: -1px;
     }
     .datetime-date {
-      font-size: 0.82rem; color: rgba(255,253,247,.55);
+      font-size: 1rem; color: rgba(255,253,247,.55);
       font-weight: 400; white-space: nowrap;
     }
 
@@ -88,25 +88,25 @@
     .weather-now {
       display: flex; align-items: center; gap: 8px; flex-shrink: 0;
     }
-    .weather-icon { font-size: 1.5rem; line-height: 1; }
+    .weather-icon { font-size: 2rem; line-height: 1; }
     .weather-temp {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 1.6rem; font-weight: 600;
+      font-size: 2.2rem; font-weight: 600;
       color: var(--today-fg); line-height: 1;
     }
     .weather-now-right {}
     .weather-desc {
-      font-size: 0.72rem; color: rgba(255,253,247,.6);
+      font-size: 0.9rem; color: rgba(255,253,247,.6);
     }
     .weather-details-inline {
       display: flex; gap: 8px; margin-top: 1px;
     }
     .weather-detail-item {
-      font-size: 0.68rem; color: rgba(255,253,247,.45);
+      font-size: 0.82rem; color: rgba(255,253,247,.45);
       display: flex; align-items: center; gap: 2px;
     }
     .weather-location {
-      font-size: 0.65rem; color: rgba(255,253,247,.35);
+      font-size: 0.78rem; color: rgba(255,253,247,.35);
       margin-top: 1px; display: flex; align-items: center; gap: 3px;
     }
     .weather-loading {
@@ -123,10 +123,10 @@
       display: flex; flex-direction: column;
       align-items: center; gap: 1px;
     }
-    .forecast-day  { font-size: 0.6rem; color: rgba(255,253,247,.4); }
-    .forecast-icon { font-size: 0.95rem; line-height: 1; }
-    .forecast-temp { font-size: 0.68rem; font-weight: 600; color: var(--today-fg); }
-    .forecast-min  { font-size: 0.62rem; color: rgba(255,253,247,.35); }
+    .forecast-day  { font-size: 0.78rem; color: rgba(255,253,247,.4); }
+    .forecast-icon { font-size: 1.2rem; line-height: 1; }
+    .forecast-temp { font-size: 0.88rem; font-weight: 600; color: var(--today-fg); }
+    .forecast-min  { font-size: 0.8rem; color: rgba(255,253,247,.35); }
 
     /* Sync dot dans la barre sombre */
     .sync-bar {
@@ -196,7 +196,7 @@
       padding: 7px 12px; border-radius: 50px;
       background: var(--surface2); border: 1px solid var(--border);
       color: var(--text-muted); cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500;
+      font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500;
       transition: all .2s; position: relative;
     }
     .btn-agendas.visible { display: flex; }
@@ -276,23 +276,23 @@
     }
     .month-label {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 1.3rem; font-weight: 600; letter-spacing: -0.2px;
+      font-size: 1.6rem; font-weight: 600; letter-spacing: -0.2px;
       color: var(--text); flex-shrink: 0;
     }
     .nav-controls { display: flex; align-items: center; gap: 6px; flex: 1; }
     .btn-nav {
-      width: 36px; height: 36px; border-radius: 50%;
+      width: 42px; height: 42px; border-radius: 50%;
       background: var(--surface2); border: 1px solid var(--border);
       color: var(--text); cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.9rem; transition: all .2s; flex-shrink: 0;
+      font-size: 1.1rem; transition: all .2s; flex-shrink: 0;
     }
     .btn-nav:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); transform: scale(1.07); }
     .btn-today {
-      padding: 7px 14px; border-radius: 50px;
+      padding: 9px 18px; border-radius: 50px;
       background: var(--surface2); border: 1px solid var(--border);
       color: var(--text); cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500;
+      font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500;
       transition: all .2s;
     }
     .btn-today:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); }
@@ -307,7 +307,7 @@
     }
     .day-name {
       text-align: center; padding: 6px 0;
-      font-size: 0.72rem; font-weight: 600; letter-spacing: .08em;
+      font-size: 0.9rem; font-weight: 600; letter-spacing: .06em;
       text-transform: uppercase; color: var(--text-muted);
     }
     .day-name.weekend { color: var(--accent2); }
@@ -335,7 +335,7 @@
     .day-cell.other-month { opacity: .3; pointer-events: none; }
     .day-cell.today .day-num {
       background: var(--today-bg); color: var(--today-fg);
-      border-radius: 50%; width: 30px; height: 30px;
+      border-radius: 50%; width: 36px; height: 36px;
       display: flex; align-items: center; justify-content: center;
       font-weight: 600;
     }
@@ -347,10 +347,10 @@
     }
     .day-num {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 1rem; font-weight: 600;
-      width: 30px; height: 30px;
+      font-size: 1.3rem; font-weight: 600;
+      width: 36px; height: 36px;
       display: flex; align-items: center; justify-content: center;
-      margin-bottom: 3px;
+      margin-bottom: 2px;
     }
     .day-cell.weekend-day .day-num { color: var(--accent2); }
 
@@ -360,14 +360,14 @@
       padding: 2px 6px 2px 4px;
       border-radius: 5px;
       border-left: 3px solid transparent;
-      font-size: 0.68rem; font-weight: 600;
+      font-size: 0.82rem; font-weight: 600;
       margin-bottom: 2px;
       cursor: pointer;
       transition: filter .15s, transform .1s;
       min-width: 0; width: 100%; overflow: hidden;
     }
     .event-chip:hover { filter: brightness(0.88); transform: scale(1.02); }
-    .event-chip .chip-emoji { font-size: 0.75rem; flex-shrink: 0; }
+    .event-chip .chip-emoji { font-size: 0.9rem; flex-shrink: 0; }
     .event-chip .chip-title {
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
       min-width: 0; flex: 1;
@@ -377,8 +377,8 @@
        bordure gauche sont la couleur pleine — défini via style inline. */
 
     .more-chip {
-      font-size: 0.66rem; color: var(--text-muted);
-      padding: 1px 4px; cursor: pointer;
+      font-size: 0.82rem; color: var(--text-muted);
+      padding: 2px 5px; cursor: pointer;
       font-weight: 600; display: inline-block;
     }
     .more-chip:hover { color: var(--accent); }
@@ -591,28 +591,30 @@
     /* ══ PORTRAIT (≤ 800px) ══ */
     @media (max-width: 800px) {
       body { padding: 6px 6px 70px; }
-      .datetime-bar { padding: 6px 12px; gap: 10px; }
-      .datetime-time { font-size: 1.6rem; letter-spacing: -0.5px; }
-      .datetime-date { font-size: 0.73rem; }
-      .weather-icon  { font-size: 1.3rem; }
-      .weather-temp  { font-size: 1.4rem; }
-      .weather-desc  { font-size: 0.65rem; }
-      .weather-details-inline { gap: 5px; }
-      .weather-detail-item { font-size: 0.6rem; }
-      .forecast-icon { font-size: 0.8rem; }
-      .forecast-temp { font-size: 0.6rem; }
-      .forecast-min  { font-size: 0.56rem; }
-      .forecast-day  { font-size: 0.56rem; }
-      .day-cell  { height: auto; min-height: 72px; padding: 3px 4px; margin: 1px; }
-      .day-num   { font-size: 0.85rem; width: 24px; height: 24px; }
-      .event-chip { font-size: 0.6rem; padding: 1px 3px; }
-      .chip-emoji { font-size: 0.65rem; }
-      .month-label { font-size: 1.1rem; }
-      .btn-nav    { width: 32px; height: 32px; font-size: 0.85rem; }
-      .btn-today  { padding: 5px 10px; font-size: 0.73rem; }
+      .datetime-bar { padding: 7px 14px; gap: 12px; }
+      .datetime-time { font-size: 2rem; letter-spacing: -0.5px; }
+      .datetime-date { font-size: 0.88rem; }
+      .weather-icon  { font-size: 1.6rem; }
+      .weather-temp  { font-size: 1.7rem; }
+      .weather-desc  { font-size: 0.8rem; }
+      .weather-details-inline { gap: 6px; }
+      .weather-detail-item { font-size: 0.75rem; }
+      .forecast-icon { font-size: 1rem; }
+      .forecast-temp { font-size: 0.78rem; }
+      .forecast-min  { font-size: 0.72rem; }
+      .forecast-day  { font-size: 0.7rem; }
+      .day-cell  { height: auto; min-height: 80px; padding: 4px 5px; margin: 1px; }
+      .day-num   { font-size: 1.1rem; width: 30px; height: 30px; }
+      .day-cell.today .day-num { width: 30px; height: 30px; }
+      .event-chip { font-size: 0.75rem; padding: 2px 4px; }
+      .event-chip .chip-emoji { font-size: 0.82rem; }
+      .more-chip  { font-size: 0.72rem; }
+      .month-label { font-size: 1.4rem; }
+      .btn-nav    { width: 38px; height: 38px; font-size: 1rem; }
+      .btn-today  { padding: 7px 14px; font-size: 0.88rem; }
       .cal-days-header { padding: 4px 6px 0; }
       .cal-grid   { padding: 3px 5px 8px; }
-      .day-name   { font-size: 0.62rem; padding: 4px 0; }
+      .day-name   { font-size: 0.82rem; padding: 5px 0; }
       .modal { max-width: 100%; border-radius: 16px; }
       .form-row { grid-template-columns: 1fr; gap: 0; }
     }
@@ -620,31 +622,34 @@
     /* ══ PAYSAGE Fire HD 8 (800px hauteur, ≥ 900px largeur) ══ */
     @media (min-width: 900px) and (max-height: 820px) {
       body { padding: 0 0 60px; }
-      .datetime-bar { border-radius: var(--radius) var(--radius) 0 0; padding: 5px 14px; gap: 12px; }
-      .datetime-time { font-size: 1.5rem; }
-      .datetime-date { font-size: 0.7rem; }
-      .weather-icon  { font-size: 1.2rem; }
-      .weather-temp  { font-size: 1.3rem; }
-      .weather-desc  { font-size: 0.62rem; }
-      .weather-details-inline { gap: 4px; margin-top: 0; }
-      .weather-detail-item { font-size: 0.58rem; }
-      .forecast-icon { font-size: 0.8rem; }
-      .forecast-temp { font-size: 0.6rem; }
-      .forecast-min  { font-size: 0.55rem; }
-      .btn-auth-disconnect { width: 26px; height: 26px; }
-      .btn-auth-disconnect svg { width: 12px; height: 12px; }
-      /* Calendrier prend toute la hauteur restante */
-      .day-cell { height: calc((100vh - 115px) / 6); min-height: 0; padding: 3px 5px; margin: 1px; }
-      .day-num   { font-size: 0.85rem; width: 24px; height: 24px; margin-bottom: 2px; }
-      .event-chip { font-size: 0.62rem; padding: 1px 4px; margin-bottom: 1px; }
-      .chip-emoji { font-size: 0.65rem; }
-      .cal-nav    { padding: 5px 12px; }
-      .month-label { font-size: 1.1rem; }
-      .btn-nav    { width: 32px; height: 32px; font-size: 0.85rem; }
-      .btn-today  { padding: 5px 10px; font-size: 0.73rem; }
+      .datetime-bar { border-radius: var(--radius) var(--radius) 0 0; padding: 6px 16px; gap: 14px; }
+      .datetime-time { font-size: 2rem; }
+      .datetime-date { font-size: 0.88rem; }
+      .weather-icon  { font-size: 1.6rem; }
+      .weather-temp  { font-size: 1.8rem; }
+      .weather-desc  { font-size: 0.8rem; }
+      .weather-details-inline { gap: 6px; margin-top: 1px; }
+      .weather-detail-item { font-size: 0.72rem; }
+      .forecast-icon { font-size: 1rem; }
+      .forecast-temp { font-size: 0.8rem; }
+      .forecast-min  { font-size: 0.72rem; }
+      .forecast-day  { font-size: 0.7rem; }
+      .btn-auth-disconnect { width: 28px; height: 28px; }
+      .btn-auth-disconnect svg { width: 13px; height: 13px; }
+      /* Calendrier pleine hauteur */
+      .day-cell { height: calc((100vh - 118px) / 6); min-height: 0; padding: 3px 5px; margin: 1px; }
+      .day-num   { font-size: 1.1rem; width: 30px; height: 30px; margin-bottom: 2px; }
+      .day-cell.today .day-num { width: 30px; height: 30px; }
+      .event-chip { font-size: 0.75rem; padding: 2px 5px; margin-bottom: 1px; }
+      .event-chip .chip-emoji { font-size: 0.82rem; }
+      .more-chip  { font-size: 0.72rem; }
+      .cal-nav    { padding: 5px 14px; }
+      .month-label { font-size: 1.3rem; }
+      .btn-nav    { width: 36px; height: 36px; font-size: 1rem; }
+      .btn-today  { padding: 6px 12px; font-size: 0.85rem; }
       .cal-days-header { padding: 3px 8px 0; }
       .cal-grid   { padding: 2px 6px 6px; }
-      .day-name   { font-size: 0.62rem; padding: 3px 0; }
+      .day-name   { font-size: 0.82rem; padding: 3px 0; }
     }
 
     /* Portrait strict < 530px */
