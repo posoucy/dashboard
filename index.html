@@ -522,31 +522,69 @@
     .form-textarea { resize: vertical; min-height: 52px; }
     .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-    /* ── Emoji picker inline ── */
-    .emoji-inline-grid {
-      display: grid; grid-template-columns: repeat(8, 1fr);
-      gap: 4px; background: var(--surface2);
+    /* ── Collections d'émojis (style Teams) ── */
+    .emoji-picker {
+      display: flex; flex-direction: column; gap: 6px;
+      background: var(--surface2);
       border: 1.5px solid var(--border);
       border-radius: var(--radius-sm); padding: 8px;
-      flex: 1;
+    }
+    /* Onglets de collections */
+    .emoji-tabs {
+      display: flex; gap: 3px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 6px; margin-bottom: 2px;
+    }
+    .emoji-tab {
+      flex: 1; padding: 5px 2px;
+      border: none; background: none; cursor: pointer;
+      border-radius: 7px; font-size: 1.15rem; line-height: 1;
+      transition: background .14s, transform .1s;
+      position: relative;
+    }
+    .emoji-tab:hover { background: var(--border); transform: scale(1.1); }
+    .emoji-tab.active {
+      background: rgba(107,127,94,.18);
+    }
+    .emoji-tab.active::after {
+      content: '';
+      position: absolute; bottom: -7px; left: 50%; transform: translateX(-50%);
+      width: 18px; height: 2px; background: var(--accent); border-radius: 2px;
+    }
+    /* Grille d'émojis */
+    .emoji-inline-grid {
+      display: grid; grid-template-columns: repeat(8, 1fr);
+      gap: 3px;
     }
     .emoji-btn {
-      width: 100%; aspect-ratio: 1; border-radius: 8px;
+      width: 100%; aspect-ratio: 1; border-radius: 7px;
       display: flex; align-items: center; justify-content: center;
       font-size: 1.2rem; cursor: pointer; border: 2px solid transparent;
-      background: var(--surface); transition: background .14s, transform .12s, border-color .14s, box-shadow .14s;
+      background: var(--surface); transition: background .12s, transform .1s, border-color .12s;
       line-height: 1;
     }
     .emoji-btn:hover { background: var(--border); transform: scale(1.15); }
     .emoji-btn.selected {
       border-color: var(--accent); background: rgba(107,127,94,.15);
-      box-shadow: 0 0 0 2px rgba(107,127,94,.18); transform: scale(1.1);
+      box-shadow: 0 0 0 2px rgba(107,127,94,.14);
     }
+    /* Aperçu émoji sélectionné */
     .emoji-preview {
       display: flex; align-items: center; gap: 8px;
-      margin-bottom: 6px; font-size: 0.75rem; color: var(--text-muted);
+      font-size: 0.72rem; color: var(--text-muted);
     }
     .emoji-preview-icon { font-size: 1.4rem; line-height: 1; }
+    /* Calendrier dans le header du formulaire */
+    .form-header-cal {
+      display: flex; align-items: center; gap: 6px; flex: 1;
+      justify-content: flex-end; margin-right: 8px;
+    }
+    .form-header-cal .cal-select-wrap { min-width: 160px; max-width: 220px; }
+    .form-header-cal .form-select {
+      padding: 6px 10px 6px 30px;
+      font-size: 0.82rem; border-radius: 20px;
+    }
+    .form-header-cal .cal-color-dot { left: 10px; width: 9px; height: 9px; }
 
     /* ── Action buttons ── */
     .btn-submit {
@@ -827,31 +865,28 @@
         <div class="modal-title" id="form-modal-title">Nouvel événement</div>
         <div class="modal-date"  id="form-modal-date">—</div>
       </div>
+      <!-- Calendrier dans le header -->
+      <div class="form-header-cal">
+        <div class="cal-select-wrap">
+          <span class="cal-color-dot" id="cal-color-dot"></span>
+          <select class="form-select" id="f-calendar" onchange="onCalendarSelectChange()">
+            <option value="primary">📅 Agenda principal</option>
+          </select>
+        </div>
+      </div>
       <button class="btn-close" onclick="closeModal('form-overlay')">✕</button>
     </div>
     <div class="modal-body">
+      <!-- Champ date caché — rempli par le code -->
+      <input type="hidden" id="f-date"/>
+
       <div class="form-layout">
 
-        <!-- Colonne gauche : champs texte / dates -->
+        <!-- Colonne gauche : titre, heures, description, bouton -->
         <div class="form-col-left">
           <div class="form-group">
             <label class="form-label">Titre *</label>
             <input class="form-input" id="f-title" type="text" placeholder="Ex : Réunion, Anniversaire…"/>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label">Date</label>
-              <input class="form-input" id="f-date" type="date"/>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Calendrier</label>
-              <div class="cal-select-wrap">
-                <span class="cal-color-dot" id="cal-color-dot"></span>
-                <select class="form-select" id="f-calendar" onchange="onCalendarSelectChange()">
-                  <option value="primary">📅 Agenda principal</option>
-                </select>
-              </div>
-            </div>
           </div>
           <div class="form-row">
             <div class="form-group">
@@ -872,13 +907,16 @@
           </button>
         </div>
 
-        <!-- Colonne droite : sélecteur d'émojis -->
+        <!-- Colonne droite : collections d'émojis -->
         <div class="form-col-right">
-          <div class="form-group">
-            <label class="form-label">Émoji</label>
+          <label class="form-label">Émoji</label>
+          <div class="emoji-picker">
+            <!-- Onglets de collections -->
+            <div class="emoji-tabs" id="emoji-tabs"></div>
+            <!-- Aperçu + grille -->
             <div class="emoji-preview">
               <span class="emoji-preview-icon" id="emoji-selected">✨</span>
-              <span>Émoji sélectionné</span>
+              <span id="emoji-preview-label">Émoji sélectionné</span>
             </div>
             <div class="emoji-inline-grid" id="emoji-grid"></div>
           </div>
@@ -920,12 +958,56 @@ let state = {
 
 let refreshTimer = null;
 
-const EMOJIS = [
-  '✨','🎉','🎂','📅','⭐','🔥','💡','🏆',
-  '💼','📞','🍕','☕','🏃','🎵','🏖️','💊',
-  '🚗','✈️','🏠','💰','📝','🔑','🌟','❤️',
-  '😊','🎯','📚','🏋️','🌿','🍎','🐾','🌙',
+// Collections d'émojis par catégorie (style Teams)
+const EMOJI_COLLECTIONS = [
+  {
+    id: 'visages', icon: '😊', label: 'Visages',
+    emojis: ['😊','😀','😄','😁','🥳','😍','🤩','😎',
+             '🥰','😂','🤣','😇','🙂','🤗','😴','😅',
+             '😬','🤔','😢','😭','😤','😡','🥺','😱',
+             '🎉','✨','⭐','💫','🌟','🔥','💯','❤️'],
+  },
+  {
+    id: 'travail', icon: '💼', label: 'Travail',
+    emojis: ['💼','📅','📝','📊','📈','📉','🗓️','📋',
+             '📌','📍','🔑','💡','🏆','🎯','✅','❌',
+             '📞','💻','🖥️','⌨️','🖨️','📱','🔔','📢',
+             '💰','💳','🏦','📨','📩','🤝','👥','🏢'],
+  },
+  {
+    id: 'activites', icon: '🏃', label: 'Activités',
+    emojis: ['🏃','🚴','🏋️','⚽','🏀','🎾','🏊','🧗',
+             '🎮','🎲','🎨','🎵','🎤','🎬','📚','✏️',
+             '🏖️','🏕️','⛺','🎡','🎢','🎠','🎭','🎪',
+             '🏆','🥇','🥈','🥉','🎗️','🎟️','🎫','🏅'],
+  },
+  {
+    id: 'transport', icon: '🚗', label: 'Transport',
+    emojis: ['🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑',
+             '✈️','🚀','🛸','🚁','⛵','🚢','🛳️','🚂',
+             '🚆','🚇','🚊','🚉','🚍','🚘','🛻','🚐',
+             '🛵','🏍️','🚲','🛴','🛺','🚡','🚠','🚟'],
+  },
+  {
+    id: 'aliments', icon: '🍕', label: 'Aliments',
+    emojis: ['🍕','🍔','🍟','🌮','🌯','🥗','🍜','🍝',
+             '🍣','🍱','🍛','🍲','🥘','🫕','🍗','🥩',
+             '🍰','🎂','🧁','🍩','🍪','🍫','🍬','🍭',
+             '☕','🍵','🧃','🥤','🍺','🥂','🍷','🥃'],
+  },
+  {
+    id: 'nature', icon: '🌿', label: 'Nature',
+    emojis: ['🌿','🌱','🌲','🌳','🌴','🌵','🌾','🍀',
+             '🌸','🌺','🌹','🌻','🌼','💐','🍁','🍂',
+             '🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼',
+             '☀️','🌤️','⛅','🌧️','⛈️','🌈','❄️','🌊'],
+  },
 ];
+// Pour compatibilité — liste plate utilisée ailleurs
+const EMOJIS = EMOJI_COLLECTIONS.flatMap(c => c.emojis);
+
+// Collection active dans le picker
+let activeEmojiCollection = 0;
 const MONTHS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 const DAYS_LONG = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
 
@@ -1638,12 +1720,20 @@ function openAddModal(dateKey, existingEv) {
   document.getElementById('form-modal-date').textContent  =
     `${DAYS_LONG[d.getDay()].charAt(0).toUpperCase() + DAYS_LONG[d.getDay()].slice(1)}, ${d.getDate()} ${MONTHS_FR[d.getMonth()]} ${d.getFullYear()}`;
   document.getElementById('f-title').value       = isEdit ? existingEv.title : '';
-  document.getElementById('f-date').value        = isEdit ? (existingEv.date || key) : key;
+  document.getElementById('f-date').value        = isEdit ? (existingEv.date || key) : key;  // champ hidden
   document.getElementById('f-time-start').value  = isEdit ? (existingEv.timeStart || existingEv.start?.substring(11,16) || '') : '09:00';
   document.getElementById('f-time-end').value    = isEdit ? (existingEv.timeEnd   || existingEv.end?.substring(11,16)   || '') : '10:00';
   document.getElementById('f-desc').value        = isEdit ? stripEmojiTag(existingEv.desc || '') : '';
   state.selectedEmoji = isEdit ? (existingEv.emoji || '📅') : '✨';
-  document.getElementById('emoji-selected').textContent = state.selectedEmoji;
+  const emojiPrev = document.getElementById('emoji-selected');
+  if (emojiPrev) emojiPrev.textContent = state.selectedEmoji;
+  // Retrouver la collection de l'émoji sélectionné
+  activeEmojiCollection = 0;
+  if (isEdit && existingEv.emoji) {
+    EMOJI_COLLECTIONS.forEach((col, i) => {
+      if (col.emojis.includes(existingEv.emoji)) activeEmojiCollection = i;
+    });
+  }
 
   // Peupler le menu déroulant des calendriers
   const sel = document.getElementById('f-calendar');
@@ -1760,16 +1850,47 @@ async function deleteEvent(dateKey, evId, calId, e) {
 }
 
 // ═══════════════════════════════════════════
-//   EMOJI PICKER — grille inline
+//   EMOJI PICKER — collections avec onglets
 // ═══════════════════════════════════════════
 function buildEmojiGrid() {
-  const grid = document.getElementById('emoji-grid');
-  grid.innerHTML = '';
-  EMOJIS.forEach(em => {
+  buildEmojiTabs();
+  renderEmojiCollection(activeEmojiCollection);
+}
+
+function buildEmojiTabs() {
+  const tabsEl = document.getElementById('emoji-tabs');
+  if (!tabsEl) return;
+  tabsEl.innerHTML = '';
+  EMOJI_COLLECTIONS.forEach((col, i) => {
     const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'emoji-tab' + (i === activeEmojiCollection ? ' active' : '');
+    btn.textContent = col.icon;
+    btn.title = col.label;
+    btn.onclick = () => switchEmojiCollection(i);
+    tabsEl.appendChild(btn);
+  });
+}
+
+function switchEmojiCollection(idx) {
+  activeEmojiCollection = idx;
+  // Mettre à jour les onglets
+  document.querySelectorAll('.emoji-tab').forEach((t, i) => {
+    t.classList.toggle('active', i === idx);
+  });
+  renderEmojiCollection(idx);
+}
+
+function renderEmojiCollection(idx) {
+  const grid = document.getElementById('emoji-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  const col = EMOJI_COLLECTIONS[idx];
+  col.emojis.forEach(em => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
     btn.className = 'emoji-btn' + (em === state.selectedEmoji ? ' selected' : '');
     btn.textContent = em;
-    btn.type = 'button';
     btn.title = em;
     btn.onclick = () => selectEmoji(em);
     grid.appendChild(btn);
@@ -1778,8 +1899,8 @@ function buildEmojiGrid() {
 
 function selectEmoji(em) {
   state.selectedEmoji = em;
-  document.getElementById('emoji-selected').textContent = em;
-  // Mettre à jour la sélection visuelle dans la grille
+  const prev = document.getElementById('emoji-selected');
+  if (prev) prev.textContent = em;
   document.querySelectorAll('#emoji-grid .emoji-btn').forEach(btn => {
     btn.classList.toggle('selected', btn.textContent === em);
   });
