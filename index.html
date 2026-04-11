@@ -334,7 +334,7 @@
     .day-cell:hover { background: var(--surface2); transform: scale(1.01); }
     .day-cell.other-month { opacity: .3; pointer-events: none; }
     .day-cell.today .day-num {
-      background: var(--today-bg); color: var(--today-fg);
+      background: var(--today-bg); color: #ffffff;
       border-radius: 50%; width: 36px; height: 36px;
       display: flex; align-items: center; justify-content: center;
       font-weight: 600;
@@ -698,14 +698,14 @@
     }
     .ws-input:focus { border-color: var(--accent); }
     .ws-btn-search {
-      padding: 10px 16px; border-radius: var(--radius-sm);
+      width: 42px; height: 42px; border-radius: var(--radius-sm);
       background: var(--accent); color: var(--surface);
-      border: none; cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 600;
-      transition: all .18s; white-space: nowrap;
+      border: none; cursor: pointer; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; transition: all .18s;
     }
-    .ws-btn-search:hover { background: #5a6c4e; }
-    .ws-btn-search:disabled { opacity: .55; cursor: not-allowed; }
+    .ws-btn-search:hover { background: #5a6c4e; transform: scale(1.05); }
+    .ws-btn-search:disabled { opacity: .55; cursor: not-allowed; transform: none; }
     .ws-result {
       font-size: 0.82rem; color: var(--text-muted);
       min-height: 20px; margin-bottom: 14px;
@@ -861,8 +861,8 @@
       <input class="ws-input" id="ws-city-input" type="text"
         placeholder="Ex : Montréal, Paris, Lyon…"
         onkeydown="if(event.key==='Enter') searchWeatherCity()"/>
-      <button class="ws-btn-search" id="ws-btn-search" onclick="searchWeatherCity()">
-        Rechercher
+      <button class="ws-btn-search" id="ws-btn-search" onclick="searchWeatherCity()" title="Rechercher">
+        🎯
       </button>
     </div>
     <div class="ws-result" id="ws-result"></div>
@@ -2144,7 +2144,7 @@ async function searchWeatherCity() {
   const btn     = document.getElementById('ws-btn-search');
   if (!input) { resultEl.textContent = 'Entrez un nom de ville.'; resultEl.className = 'ws-result err'; return; }
 
-  btn.disabled = true; btn.textContent = '⏳ Recherche…';
+  btn.disabled = true; btn.textContent = '⏳';
   resultEl.textContent = ''; resultEl.className = 'ws-result';
 
   try {
@@ -2156,7 +2156,7 @@ async function searchWeatherCity() {
     if (!geoData.results || !geoData.results.length) {
       resultEl.textContent = '❌ Ville introuvable. Essayez un nom plus précis.';
       resultEl.className = 'ws-result err';
-      btn.disabled = false; btn.textContent = 'Rechercher';
+      btn.disabled = false; btn.textContent = '🎯';
       return;
     }
     const city = geoData.results[0];
@@ -2176,7 +2176,7 @@ async function searchWeatherCity() {
     resultEl.textContent = '❌ Erreur de recherche. Vérifiez votre connexion.';
     resultEl.className = 'ws-result err';
   }
-  btn.disabled = false; btn.textContent = 'Rechercher';
+  btn.disabled = false; btn.textContent = '🎯';
 }
 
 async function loadWeather() {
