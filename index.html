@@ -353,6 +353,9 @@
       margin-bottom: 2px;
     }
     .day-cell.weekend-day .day-num { color: var(--accent2); }
+    /* Aujourd'hui : toujours blanc sur fond vert, même si week-end */
+    .day-cell.today .day-num,
+    .day-cell.today.weekend-day .day-num { color: #ffffff !important; }
 
     /* ── Event chips — fond = couleur de l'agenda ── */
     .event-chip {
@@ -643,6 +646,92 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
+    /* ── Popup météo détaillée ── */
+    .weather-popup-overlay {
+      position: fixed; inset: 0; z-index: 350;
+      background: rgba(45,42,36,.5); backdrop-filter: blur(8px);
+      opacity: 0; pointer-events: none; transition: opacity .25s;
+    }
+    .weather-popup-overlay.open { opacity: 1; pointer-events: all; }
+
+    .weather-popup {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%) scale(.95);
+      width: min(680px, 95vw);
+      background: linear-gradient(145deg, #1e2d24, #2d3d2a);
+      border-radius: 24px; box-shadow: 0 24px 80px rgba(0,0,0,.45);
+      border: 1px solid rgba(255,255,255,.08);
+      color: #fff; z-index: 351; overflow: hidden;
+      opacity: 0; pointer-events: none;
+      transition: opacity .28s, transform .28s cubic-bezier(.34,1.2,.64,1);
+    }
+    .weather-popup.open { opacity: 1; pointer-events: all; transform: translate(-50%,-50%) scale(1); }
+
+    /* Header popup */
+    .wp-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 24px 28px 0;
+    }
+    .wp-city {
+      font-size: 1rem; color: rgba(255,255,255,.5);
+      text-transform: uppercase; letter-spacing: .12em; margin-bottom: 4px;
+    }
+    .wp-main { display: flex; align-items: center; gap: 16px; }
+    .wp-icon  { font-size: 5rem; line-height: 1; }
+    .wp-temp  {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 5.5rem; font-weight: 300; line-height: 1; letter-spacing: -3px;
+    }
+    .wp-desc  { font-size: 1.2rem; color: rgba(255,255,255,.7); margin-top: 4px; }
+    .wp-close {
+      width: 36px; height: 36px; border-radius: 50%; border: none;
+      background: rgba(255,255,255,.1); color: rgba(255,255,255,.6);
+      cursor: pointer; font-size: 1rem; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .18s;
+    }
+    .wp-close:hover { background: rgba(255,255,255,.2); color: #fff; }
+
+    /* Détails actuels */
+    .wp-details {
+      display: flex; gap: 0;
+      padding: 16px 28px 20px; flex-wrap: wrap;
+    }
+    .wp-detail {
+      flex: 1; min-width: 100px;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 12px 8px;
+      border-right: 1px solid rgba(255,255,255,.08);
+    }
+    .wp-detail:last-child { border-right: none; }
+    .wp-detail-icon  { font-size: 1.5rem; margin-bottom: 4px; }
+    .wp-detail-value { font-size: 1.3rem; font-weight: 600; }
+    .wp-detail-label { font-size: 0.72rem; color: rgba(255,255,255,.45); margin-top: 2px; text-transform: uppercase; letter-spacing: .06em; }
+
+    /* Séparateur */
+    .wp-sep {
+      height: 1px; background: rgba(255,255,255,.08); margin: 0 28px;
+    }
+
+    /* Prévisions */
+    .wp-forecast {
+      display: flex; padding: 20px 28px 24px; gap: 8px;
+    }
+    .wp-fc-col {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px;
+      background: rgba(255,255,255,.04); border-radius: 14px;
+      padding: 14px 6px;
+    }
+    .wp-fc-day   { font-size: 0.78rem; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .06em; }
+    .wp-fc-icon  { font-size: 2rem; line-height: 1; }
+    .wp-fc-max   { font-size: 1.2rem; font-weight: 600; }
+    .wp-fc-min   { font-size: 0.9rem; color: rgba(255,255,255,.45); }
+    .wp-fc-desc  { font-size: 0.65rem; color: rgba(255,255,255,.4); text-align: center; padding: 0 4px; }
+
+    /* Zone cliquable météo */
+    .weather-now { cursor: pointer; }
+    .weather-now:hover { opacity: .85; }
+
     /* ── Bouton paramètres météo ── */
     .btn-weather-settings {
       width: 26px; height: 26px; border-radius: 50%;
@@ -869,6 +958,27 @@
     <div class="ws-footer">
       <button class="ws-btn-cancel" onclick="closeWeatherSettings()">Fermer</button>
     </div>
+  </div>
+
+  <!-- ══ POPUP MÉTÉO DÉTAILLÉE ══ -->
+  <div class="weather-popup-overlay" id="wp-overlay" onclick="closeWeatherPopup()"></div>
+  <div class="weather-popup" id="wp-popup">
+    <div class="wp-header">
+      <div>
+        <div class="wp-city" id="wp-city">—</div>
+        <div class="wp-main">
+          <span class="wp-icon" id="wp-icon">🌡️</span>
+          <div>
+            <div class="wp-temp" id="wp-temp">—°</div>
+            <div class="wp-desc" id="wp-desc">—</div>
+          </div>
+        </div>
+      </div>
+      <button class="wp-close" onclick="closeWeatherPopup()">✕</button>
+    </div>
+    <div class="wp-details" id="wp-details"></div>
+    <div class="wp-sep"></div>
+    <div class="wp-forecast" id="wp-forecast"></div>
   </div>
 
   <!-- HEADER masqué — bouton connexion uniquement visible si non connecté -->
@@ -2209,10 +2319,11 @@ async function loadWeather() {
     const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon
       + '&current=temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code'
       + '&daily=weather_code,temperature_2m_max,temperature_2m_min'
-      + '&timezone=auto&forecast_days=5';
+      + '&timezone=auto&forecast_days=7';
     const resp = await fetch(url);
     const data = await resp.json();
 
+    state.weatherData = { data, cityName, lat, lon };
     const cur   = data.current;
     const daily = data.daily;
     const temp  = Math.round(cur.temperature_2m);
@@ -2222,7 +2333,8 @@ async function loadWeather() {
     const wind  = Math.round(cur.wind_speed_10m);
     const hum   = cur.relative_humidity_2m;
 
-    // Météo actuelle — dans la barre sombre
+    // Météo actuelle — dans la barre sombre (cliquable pour popup)
+    nowEl.onclick = openWeatherPopup;
     nowEl.innerHTML =
       '<span class="weather-icon">' + icon + '</span>'
       + '<div>'
@@ -2256,6 +2368,75 @@ async function loadWeather() {
     nowEl.innerHTML = '<div class="weather-loading">Météo indisponible —<br/>Activez la localisation.</div>';
   }
 }
+
+// ═══════════════════════════════════════════
+//   POPUP MÉTÉO DÉTAILLÉE
+// ═══════════════════════════════════════════
+const DAYS_LONG_FR = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+
+function openWeatherPopup() {
+  if (!state.weatherData) return;
+  const { data, cityName } = state.weatherData;
+  const cur   = data.current;
+  const daily = data.daily;
+  const temp  = Math.round(cur.temperature_2m);
+  const code  = cur.weather_code;
+  const icon  = WMO_ICONS[code] || '🌡️';
+  const desc  = WMO_DESC[code]  || '';
+  const wind  = Math.round(cur.wind_speed_10m);
+  const hum   = cur.relative_humidity_2m;
+
+  document.getElementById('wp-city').textContent  = cityName || '';
+  document.getElementById('wp-icon').textContent  = icon;
+  document.getElementById('wp-temp').textContent  = temp + '°C';
+  document.getElementById('wp-desc').textContent  = desc;
+
+  // Détails actuels
+  document.getElementById('wp-details').innerHTML =
+    detail('💧', hum + '%', 'Humidité') +
+    detail('💨', wind + ' km/h', 'Vent') +
+    detail('🌡️', Math.round(daily.temperature_2m_max[0]) + '°', "Max aujourd'hui") +
+    detail('❄️', Math.round(daily.temperature_2m_min[0]) + '°', "Min aujourd'hui");
+
+  // Prévisions 6 jours
+  let fcHTML = '';
+  for (let i = 1; i <= 6 && i < daily.time.length; i++) {
+    const d    = new Date(daily.time[i] + 'T12:00:00');
+    const dico = WMO_ICONS[daily.weather_code[i]] || '🌡️';
+    const ddesc = WMO_DESC[daily.weather_code[i]] || '';
+    const tmax = Math.round(daily.temperature_2m_max[i]);
+    const tmin = Math.round(daily.temperature_2m_min[i]);
+    fcHTML += '<div class="wp-fc-col">'
+      + '<div class="wp-fc-day">' + DAYS_LONG_FR[d.getDay()].substring(0,3) + '</div>'
+      + '<div class="wp-fc-icon">' + dico + '</div>'
+      + '<div class="wp-fc-max">' + tmax + '°</div>'
+      + '<div class="wp-fc-min">' + tmin + '°</div>'
+      + '<div class="wp-fc-desc">' + ddesc + '</div>'
+      + '</div>';
+  }
+  document.getElementById('wp-forecast').innerHTML = fcHTML;
+
+  document.getElementById('wp-overlay').classList.add('open');
+  document.getElementById('wp-popup').classList.add('open');
+}
+
+function detail(icon, value, label) {
+  return '<div class="wp-detail">'
+    + '<div class="wp-detail-icon">' + icon + '</div>'
+    + '<div class="wp-detail-value">' + value + '</div>'
+    + '<div class="wp-detail-label">' + label + '</div>'
+    + '</div>';
+}
+
+function closeWeatherPopup() {
+  document.getElementById('wp-overlay').classList.remove('open');
+  document.getElementById('wp-popup').classList.remove('open');
+}
+
+// Fermer avec Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeWeatherPopup();
+});
 
 function init() {
   renderCalendar();
