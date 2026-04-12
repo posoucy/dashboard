@@ -3069,7 +3069,8 @@ async function spFetch(endpoint, method, body) {
       }
       clearSpotifySession(); spState.token = null; renderSpotifyBody(); return null;
     }
-    if (resp.status === 204 || resp.status === 202) return true;
+    if (resp.status === 202) return true;
+    if (resp.status === 204) return null;  // ex: /me/player sans lecture active
     if (!resp.ok) return null;
     return await resp.json();
   } catch { return null; }
@@ -3114,9 +3115,18 @@ function closeSpotifyPopup() {
 // ── Polling ──
 function startSpotifyPolling() {
   stopSpotifyPolling();
+  let lastTrackId = null;
   spState.polling = setInterval(async () => {
     await fetchSpotifyNowPlaying();
-    renderNowPlaying();
+    const currentId = spState.current?.item?.id || null;
+    if (currentId !== lastTrackId) {
+      // Nouveau morceau (ou plus rien) — re-render complet pour mettre à jour pochette + appareil
+      lastTrackId = currentId;
+      if (spState.view === 'player') renderSpotifyBody();
+    } else {
+      // Même morceau — mise à jour légère (progression, play/pause)
+      renderNowPlaying();
+    }
   }, 3000);
 }
 function stopSpotifyPolling() {
@@ -3126,16 +3136,18 @@ function stopSpotifyPolling() {
 // ── Fetch données ──
 async function fetchSpotifyNowPlaying() {
   const data = await spFetch('/me/player');
-  spState.current = data;
-  // Mettre à jour l'icône dans la barre
+  // data est null si 204 (rien en lecture / pas d'appareil)
+  // data est un objet si quelque chose joue ou est en pause
+  spState.current = (data && typeof data === 'object') ? data : null;
+  // Icône dans la barre principale
   const btn = document.getElementById('btn-spotify');
-  if (btn) btn.classList.toggle('playing', !!(data && data.is_playing));
-  // Status
+  if (btn) btn.classList.toggle('playing', !!(spState.current && spState.current.is_playing));
+  // Status dans le popup
   const statusEl = document.getElementById('sp-status');
   if (statusEl) {
-    if (!data) statusEl.textContent = 'Aucun appareil actif';
-    else if (!data.is_playing) statusEl.textContent = '⏸ En pause';
-    else statusEl.textContent = '▶ En lecture';
+    if (!spState.current)              statusEl.textContent = '';
+    else if (!spState.current.is_playing) statusEl.textContent = '⏸ En pause';
+    else                               statusEl.textContent  = '▶ En lecture';
   }
 }
 async function fetchSpotifyPlaylists() {
@@ -3223,9 +3235,22 @@ function renderNowPlaying() {
   if (artistEl) artistEl.textContent = track.artists.map(a => a.name).join(', ');
   const albumEl = document.getElementById('sp-track-album');
   if (albumEl) albumEl.textContent = track.album.name;
-  // Pochette
+  // Pochette — remplacer le span par une image si nécessaire
   const coverEl = document.getElementById('sp-cover-img');
-  if (coverEl && track.album.images[0]) coverEl.src = track.album.images[0].url;
+  if (coverEl && track.album.images[0]) {
+    const imgUrl = track.album.images[0].url;
+    if (coverEl.tagName === 'SPAN') {
+      // Remplacer le span emoji par une vraie image
+      const img = document.createElement('img');
+      img.id  = 'sp-cover-img';
+      img.src = imgUrl;
+      img.alt = 'cover';
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+      coverEl.replaceWith(img);
+    } else {
+      coverEl.src = imgUrl;
+    }
+  }
   // Progression
   const pct = track.duration_ms > 0 ? (c.progress_ms / track.duration_ms * 100) : 0;
   const fillEl = document.getElementById('sp-prog-fill');
