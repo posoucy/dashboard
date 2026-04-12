@@ -730,7 +730,7 @@
     /* Layout 2 colonnes */
     .sp-body-grid {
       display: grid; grid-template-columns: 1fr 1fr;
-      gap: 0;
+      gap: 0; min-height: 320px;
     }
     .sp-col-left {
       padding: 14px 16px;
@@ -738,7 +738,7 @@
     }
     .sp-col-right {
       display: flex; flex-direction: column;
-      overflow: hidden;
+      min-height: 0; overflow: visible;
     }
 
     /* Morceau en cours */
@@ -809,7 +809,7 @@
       padding: 10px 14px 6px; flex-shrink: 0;
       border-bottom: 1px solid rgba(255,255,255,.06);
     }
-    .sp-playlist-scroll { overflow-y: auto; flex: 1; max-height: 260px; }
+    .sp-playlist-scroll { overflow-y: auto; height: 280px; }
     .sp-playlist-scroll::-webkit-scrollbar { width: 3px; }
     .sp-playlist-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 3px; }
     .sp-playlist-item {
@@ -1518,7 +1518,7 @@
 // ═══════════════════════════════════════════
 const GOOGLE_CONFIG = {
   clientId:     '647348410681-90bses902v8ln2766frod7lt29jske7u.apps.googleusercontent.com',
-  apiKey:       'AIzaSyBSbgEvnuLAiIg71kk4K2k-RltRPorYLMs',
+  apiKey:       'AIzaSyBSbgEvnuLAiIg71kk4K2k-RltRPorYLMss',
   scopes:       'https://www.googleapis.com/auth/calendar',
   discoveryDoc: 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
 };
@@ -3082,28 +3082,35 @@ function toggleSpotifyPopup() {
   else              openSpotifyPopup();
 }
 async function openSpotifyPopup() {
-  spState.open  = true;
-  spState.view  = 'player';
+  spState.open = true;
+  spState.view = 'player';
   document.getElementById('sp-overlay').classList.add('open');
   document.getElementById('sp-popup').classList.add('open');
 
-  // Tenter token sauvegardé
   if (!spState.token) spState.token = loadSpotifySession();
-
-  // Afficher immédiatement (avec ce qu'on a déjà en mémoire)
   updateSpAuthBtn();
-  renderSpotifyBody();
 
-  if (spState.token) {
-    // Charger en parallèle et re-rendre une fois tout arrivé
-    await Promise.all([
-      fetchSpotifyNowPlaying(),
-      fetchSpotifyPlaylists(),
-      fetchSpotifyDevices(),
-    ]);
+  if (!spState.token) {
     renderSpotifyBody();
-    startSpotifyPolling();
+    return;
   }
+
+  // Afficher un spinner pendant le chargement
+  document.getElementById('sp-body').innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:center;padding:60px;color:rgba(255,255,255,.3);gap:12px">'
+    + '<div style="width:20px;height:20px;border:2px solid rgba(255,255,255,.15);border-top-color:#1ed760;border-radius:50%;animation:spin .7s linear infinite"></div>'
+    + '<span style="font-size:0.85rem">Chargement…</span></div>';
+
+  // Charger les données indépendamment
+  fetchSpotifyPlaylists().then(() => {
+    if (spState.view === 'player' && spState.open) renderSpotifyBody();
+  });
+
+  fetchSpotifyDevices();
+
+  await fetchSpotifyNowPlaying();
+  renderSpotifyBody();  // render complet avec track (playlists peuvent encore charger)
+  startSpotifyPolling();
 }
 function closeSpotifyPopup() {
   spState.open = false;
@@ -3117,15 +3124,15 @@ function startSpotifyPolling() {
   stopSpotifyPolling();
   let lastTrackId = null;
   spState.polling = setInterval(async () => {
+    if (!spState.open) return; // ne pas poller si popup fermé
     await fetchSpotifyNowPlaying();
+    if (!spState.open || spState.view !== 'player') return;
     const currentId = spState.current?.item?.id || null;
     if (currentId !== lastTrackId) {
-      // Nouveau morceau (ou plus rien) — re-render complet pour mettre à jour pochette + appareil
       lastTrackId = currentId;
-      if (spState.view === 'player') renderSpotifyBody();
+      renderSpotifyBody(); // nouveau morceau → render complet
     } else {
-      // Même morceau — mise à jour légère (progression, play/pause)
-      renderNowPlaying();
+      renderNowPlaying();  // même morceau → mise à jour légère
     }
   }, 3000);
 }
@@ -3135,19 +3142,23 @@ function stopSpotifyPolling() {
 
 // ── Fetch données ──
 async function fetchSpotifyNowPlaying() {
-  const data = await spFetch('/me/player');
-  // data est null si 204 (rien en lecture / pas d'appareil)
-  // data est un objet si quelque chose joue ou est en pause
-  spState.current = (data && typeof data === 'object') ? data : null;
-  // Icône dans la barre principale
+  // Essayer d'abord /me/player (état complet avec device)
+  let data = await spFetch('/me/player');
+  // Si null (204 = pas d'appareil actif), essayer currently-playing
+  if (!data || typeof data !== 'object') {
+    data = await spFetch('/me/player/currently-playing');
+  }
+  spState.current = (data && typeof data === 'object' && data.item) ? data : null;
+
+  const isPlaying = !!(spState.current && spState.current.is_playing);
   const btn = document.getElementById('btn-spotify');
-  if (btn) btn.classList.toggle('playing', !!(spState.current && spState.current.is_playing));
-  // Status dans le popup
+  if (btn) btn.classList.toggle('playing', isPlaying);
+
   const statusEl = document.getElementById('sp-status');
   if (statusEl) {
-    if (!spState.current)              statusEl.textContent = '';
-    else if (!spState.current.is_playing) statusEl.textContent = '⏸ En pause';
-    else                               statusEl.textContent  = '▶ En lecture';
+    if (!spState.current)    statusEl.textContent = '';
+    else if (!isPlaying)     statusEl.textContent = '⏸ En pause';
+    else                     statusEl.textContent = '▶ En lecture';
   }
 }
 async function fetchSpotifyPlaylists() {
