@@ -670,17 +670,18 @@
     .spotify-overlay.open { opacity: 1; pointer-events: all; }
 
     .spotify-popup {
-      position: fixed; bottom: 0; left: 50%; transform: translateX(-50%) translateY(20px);
-      width: min(500px, 98vw);
-      background: #121212; border-radius: 20px 20px 0 0;
-      box-shadow: 0 -8px 40px rgba(0,0,0,.6);
-      border: 1px solid rgba(255,255,255,.08); border-bottom: none;
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -48%) scale(.96);
+      width: min(500px, 96vw);
+      background: #121212; border-radius: 20px;
+      box-shadow: 0 24px 60px rgba(0,0,0,.7);
+      border: 1px solid rgba(255,255,255,.08);
       z-index: 351; overflow: hidden;
       opacity: 0; pointer-events: none;
       transition: opacity .28s, transform .28s cubic-bezier(.34,1.1,.64,1);
       max-height: 92vh; overflow-y: auto;
     }
-    .spotify-popup.open { opacity: 1; pointer-events: all; transform: translateX(-50%) translateY(0); }
+    .spotify-popup.open { opacity: 1; pointer-events: all; transform: translate(-50%, -50%) scale(1); }
 
     /* Header Spotify */
     .sp-header {
@@ -1722,10 +1723,10 @@ async function initGapiClient() {
 // ─────────────────────────────────────────
 async function checkAuthOnLoad() {
 
-  // ── Cas 0 : Token Spotify dans le hash ?
-  if (checkSpotifyHashToken()) {
-    spState.token = loadSpotifySession();
-    // Ouvrir le popup Spotify si c'était une auth Spotify
+  // ── Cas 0 : Code Spotify dans l'URL ?
+  const spotifyAuthed = await checkSpotifyHashToken();
+  if (spotifyAuthed) {
+    // Ouvrir le popup Spotify après l'auth réussie
     openSpotifyPopup();
   }
 
@@ -2928,34 +2929,103 @@ function loadSpotifySession() {
 }
 function clearSpotifySession() { localStorage.removeItem(SPOTIFY_SESSION_KEY); }
 
-// ── Auth Spotify (redirect) ──
-function spotifyLogin() {
-  const params = new URLSearchParams({
-    client_id:     SPOTIFY_CLIENT_ID,
-    response_type: 'token',
-    redirect_uri:  getRedirectUri(),
-    scope:         SPOTIFY_SCOPES,
-    show_dialog:   'false',
-  });
-  // Marquer qu'on attend un token Spotify
+// ── Auth Spotify — flux PKCE (sans secret, standard moderne) ──
+async function generatePKCE() {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  const verifier = btoa(String.fromCharCode(...array))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  const data = new TextEncoder().encode(verifier);
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  const challenge = btoa(String.fromCharCode(...new Uint8Array(digest)))
+    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+  return { verifier, challenge };
+}
+
+async function spotifyLogin() {
+  const { verifier, challenge } = await generatePKCE();
+  sessionStorage.setItem('spotify_pkce_verifier', verifier);
   sessionStorage.setItem('spotify_auth_pending', '1');
+  const params = new URLSearchParams({
+    client_id:             SPOTIFY_CLIENT_ID,
+    response_type:         'code',
+    redirect_uri:          getRedirectUri(),
+    scope:                 SPOTIFY_SCOPES,
+    code_challenge_method: 'S256',
+    code_challenge:        challenge,
+    show_dialog:           'false',
+  });
   window.location.href = 'https://accounts.spotify.com/authorize?' + params.toString();
 }
 
-// ── Lire token Spotify dans le hash (appelé au chargement) ──
-function checkSpotifyHashToken() {
-  if (!sessionStorage.getItem('spotify_auth_pending')) return false;
-  const hash = window.location.hash.substring(1);
-  if (!hash) return false;
-  const params = new URLSearchParams(hash);
-  const token  = params.get('access_token');
-  const expiry = params.get('expires_in');
-  if (!token) return false;
+// ── Échanger le code contre un token (PKCE step 2) ──
+async function exchangeSpotifyCode(code) {
+  const verifier = sessionStorage.getItem('spotify_pkce_verifier');
+  if (!verifier) return false;
+  sessionStorage.removeItem('spotify_pkce_verifier');
   sessionStorage.removeItem('spotify_auth_pending');
-  clearUrlHash();
-  spState.token = token;
-  saveSpotifySession(token, expiry || 3600);
-  return true;
+  try {
+    const resp = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id:     SPOTIFY_CLIENT_ID,
+        grant_type:    'authorization_code',
+        code,
+        redirect_uri:  getRedirectUri(),
+        code_verifier: verifier,
+      }).toString(),
+    });
+    if (!resp.ok) { console.error('Spotify token exchange failed', await resp.text()); return false; }
+    const data = await resp.json();
+    spState.token = data.access_token;
+    // Sauvegarder aussi le refresh token
+    saveSpotifySession(data.access_token, data.expires_in || 3600);
+    if (data.refresh_token) localStorage.setItem('spotify_refresh_token', data.refresh_token);
+    return true;
+  } catch(e) { console.error('Spotify exchange error', e); return false; }
+}
+
+// ── Refresh token Spotify ──
+async function refreshSpotifyToken() {
+  const refreshToken = localStorage.getItem('spotify_refresh_token');
+  if (!refreshToken) return false;
+  try {
+    const resp = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id:     SPOTIFY_CLIENT_ID,
+        grant_type:    'refresh_token',
+        refresh_token: refreshToken,
+      }).toString(),
+    });
+    if (!resp.ok) return false;
+    const data = await resp.json();
+    spState.token = data.access_token;
+    saveSpotifySession(data.access_token, data.expires_in || 3600);
+    if (data.refresh_token) localStorage.setItem('spotify_refresh_token', data.refresh_token);
+    return true;
+  } catch { return false; }
+}
+
+// ── Lire le code Spotify dans l'URL (appelé au chargement) ──
+async function checkSpotifyHashToken() {
+  // Code de retour Spotify (PKCE)
+  if (sessionStorage.getItem('spotify_auth_pending')) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    if (code) {
+      // Nettoyer l'URL
+      history.replaceState(null, '', window.location.pathname);
+      const ok = await exchangeSpotifyCode(code);
+      return ok;
+    }
+    // Erreur — annuler
+    sessionStorage.removeItem('spotify_auth_pending');
+    sessionStorage.removeItem('spotify_pkce_verifier');
+  }
+  return false;
 }
 
 // ── API Spotify helper ──
@@ -2968,7 +3038,17 @@ async function spFetch(endpoint, method, body) {
     };
     if (body) { opts.body = JSON.stringify(body); opts.headers['Content-Type'] = 'application/json'; }
     const resp = await fetch('https://api.spotify.com/v1' + endpoint, opts);
-    if (resp.status === 401) { clearSpotifySession(); spState.token = null; renderSpotifyBody(); return null; }
+    if (resp.status === 401) {
+      // Tenter refresh automatique avant d'abandonner
+      const refreshed = await refreshSpotifyToken();
+      if (refreshed) {
+        // Réessayer une fois avec le nouveau token
+        opts.headers['Authorization'] = 'Bearer ' + spState.token;
+        const retry = await fetch('https://api.spotify.com/v1' + endpoint, opts);
+        if (retry.ok) { if (retry.status === 204) return true; return await retry.json(); }
+      }
+      clearSpotifySession(); spState.token = null; renderSpotifyBody(); return null;
+    }
     if (resp.status === 204 || resp.status === 202) return true;
     if (!resp.ok) return null;
     return await resp.json();
