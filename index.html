@@ -651,20 +651,18 @@
     ══════════════════════════════════════ */
     .btn-spotify {
       width: 28px; height: 28px; border-radius: 50%;
-      background: rgba(255,253,247,.08);
-      border: 1px solid rgba(255,253,247,.15);
-      color: rgba(255,253,247,.5);
-      cursor: pointer; flex-shrink: 0;
+      background: rgba(255,253,247,.08); border: 1px solid rgba(255,253,247,.15);
+      color: rgba(255,253,247,.5); cursor: pointer; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
       font-size: 0.95rem; transition: all .2s;
     }
     .btn-spotify:hover { background: rgba(30,215,96,.25); color: #1ed760; border-color: rgba(30,215,96,.4); }
     .btn-spotify.playing { color: #1ed760; border-color: rgba(30,215,96,.4); background: rgba(30,215,96,.15); }
 
-    /* Popup Spotify */
+    /* Overlay + Popup */
     .spotify-overlay {
       position: fixed; inset: 0; z-index: 350;
-      background: rgba(0,0,0,.5); backdrop-filter: blur(8px);
+      background: rgba(0,0,0,.55); backdrop-filter: blur(8px);
       opacity: 0; pointer-events: none; transition: opacity .25s;
     }
     .spotify-overlay.open { opacity: 1; pointer-events: all; }
@@ -672,190 +670,172 @@
     .spotify-popup {
       position: fixed; top: 50%; left: 50%;
       transform: translate(-50%, -48%) scale(.96);
-      width: min(560px, 97vw);
-      max-height: 92vh;
-      background: #121212; border-radius: 20px;
-      box-shadow: 0 24px 60px rgba(0,0,0,.7);
-      border: 1px solid rgba(255,255,255,.08);
-      z-index: 351;
-      overflow-x: hidden;
-      overflow-y: auto;
+      width: min(820px, 95vw);
+      max-height: 88vh;
+      background: #121212; border-radius: 18px;
+      box-shadow: 0 24px 60px rgba(0,0,0,.75);
+      border: 1px solid rgba(255,255,255,.09);
+      z-index: 351; overflow: hidden;
       opacity: 0; pointer-events: none;
       transition: opacity .28s, transform .28s cubic-bezier(.34,1.1,.64,1);
+      display: flex; flex-direction: column;
     }
     .spotify-popup.open { opacity: 1; pointer-events: all; transform: translate(-50%, -50%) scale(1); }
 
     /* Header */
     .sp-header {
-      display: flex; align-items: center; gap: 8px;
-      padding: 12px 16px 10px;
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 20px 12px; flex-shrink: 0;
       border-bottom: 1px solid rgba(255,255,255,.08);
     }
-    .sp-title { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; font-weight: 600; color: #fff; }
-    .sp-title-icon { color: #1ed760; font-size: 1rem; }
-    .sp-status { font-size: 0.7rem; color: rgba(255,255,255,.3); margin-left: 6px; }
-    .sp-header-right { display: flex; align-items: center; gap: 6px; margin-left: auto; }
-    /* Bouton connexion/déconnexion Spotify dans le header */
+    .sp-title { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; font-weight: 600; color: #fff; }
+    .sp-title-icon { color: #1ed760; font-size: 1.1rem; line-height: 1; }
+    .sp-status { font-size: 0.72rem; color: rgba(255,255,255,.35); }
+    .sp-header-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
+    /* Bouton déconnexion — texte uniquement, pas d'icône problématique */
     .sp-btn-auth-spotify {
-      background: none; border: 1px solid rgba(255,255,255,.15); cursor: pointer;
-      color: rgba(255,255,255,.45); border-radius: 20px; padding: 5px 12px;
-      font-size: 0.75rem; font-family: 'DM Sans', sans-serif; font-weight: 500;
-      transition: all .18s; white-space: nowrap;
+      background: none; border: 1px solid rgba(255,255,255,.18); cursor: pointer;
+      color: rgba(255,255,255,.5); border-radius: 20px; padding: 6px 14px;
+      font-size: 0.78rem; font-family: 'DM Sans', sans-serif; font-weight: 500;
+      transition: all .18s; white-space: nowrap; line-height: 1.2;
     }
     .sp-btn-auth-spotify:hover { border-color: #1ed760; color: #1ed760; }
-    .sp-btn-auth-spotify.connected {
-      color: rgba(255,100,100,.7); border-color: rgba(255,80,80,.3);
-    }
-    .sp-btn-auth-spotify.connected:hover {
-      color: #ff6464; border-color: rgba(255,80,80,.6);
-    }
+    .sp-btn-auth-spotify.connected { color: rgba(255,120,120,.8); border-color: rgba(255,80,80,.35); }
+    .sp-btn-auth-spotify.connected:hover { color: #ff7070; border-color: rgba(255,80,80,.7); }
+
     .sp-close {
-      width: 28px; height: 28px; border-radius: 50%;
+      width: 30px; height: 30px; border-radius: 50%;
       background: rgba(255,255,255,.08); border: none;
-      color: rgba(255,255,255,.5); cursor: pointer; font-size: 0.85rem;
+      color: rgba(255,255,255,.55); cursor: pointer; font-size: 0.9rem;
       display: flex; align-items: center; justify-content: center; transition: all .18s;
     }
     .sp-close:hover { background: rgba(255,255,255,.18); color: #fff; }
 
     /* Zone connexion */
-    .sp-login { padding: 40px 24px; text-align: center; }
-    .sp-login-icon { font-size: 3rem; margin-bottom: 12px; }
-    .sp-login-text { font-size: 0.88rem; color: rgba(255,255,255,.6); margin-bottom: 20px; }
+    .sp-login { padding: 48px 32px; text-align: center; }
+    .sp-login-icon { font-size: 3.5rem; margin-bottom: 16px; }
+    .sp-login-text { font-size: 0.9rem; color: rgba(255,255,255,.55); margin-bottom: 24px; line-height: 1.5; }
     .sp-btn-login {
       display: inline-flex; align-items: center; gap: 10px;
-      padding: 12px 28px; border-radius: 50px;
+      padding: 13px 32px; border-radius: 50px;
       background: #1ed760; color: #000; border: none; cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 700;
+      font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 700;
       transition: all .2s;
     }
     .sp-btn-login:hover { background: #1fdf64; transform: scale(1.03); }
 
-    /* Layout colonne unique scrollable */
-    .sp-body-grid { display: block; }
-    .sp-col-left { padding: 12px 16px 0; }
+    /* Corps du popup : layout 2 colonnes fixes */
+    .sp-body-grid {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      flex: 1; overflow: hidden;
+      min-height: 0;
+    }
+    .sp-col-left {
+      padding: 18px 20px;
+      border-right: 1px solid rgba(255,255,255,.07);
+      display: flex; flex-direction: column; gap: 12px;
+      overflow: hidden;
+    }
     .sp-col-right {
-      border-top: 1px solid rgba(255,255,255,.07);
-      margin-top: 8px;
+      display: flex; flex-direction: column;
+      overflow: hidden;
     }
 
     /* Morceau en cours */
-    .sp-now-playing { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
+    .sp-now-playing { display: flex; gap: 14px; align-items: center; }
     .sp-cover {
-      width: 68px; height: 68px; border-radius: 8px;
+      width: 72px; height: 72px; border-radius: 10px;
       background: #282828; flex-shrink: 0; overflow: hidden;
-      display: flex; align-items: center; justify-content: center; font-size: 1.8rem;
+      display: flex; align-items: center; justify-content: center; font-size: 2rem;
     }
     .sp-cover img { width: 100%; height: 100%; object-fit: cover; }
     .sp-track-info { flex: 1; min-width: 0; }
-    .sp-track-name { font-size: 0.95rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sp-track-artist { font-size: 0.78rem; color: rgba(255,255,255,.55); margin-top: 2px; }
-    .sp-track-album  { font-size: 0.7rem; color: rgba(255,255,255,.3); margin-top: 1px; }
+    .sp-track-name   { font-size: 1rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sp-track-artist { font-size: 0.82rem; color: rgba(255,255,255,.55); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sp-track-album  { font-size: 0.72rem; color: rgba(255,255,255,.3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* Progression */
-    .sp-progress { margin-bottom: 8px; }
+    .sp-progress { }
     .sp-progress-bar {
       width: 100%; height: 5px; background: rgba(255,255,255,.15);
-      border-radius: 3px; cursor: pointer; position: relative; margin-bottom: 4px;
+      border-radius: 3px; cursor: pointer; position: relative; margin-bottom: 5px;
     }
-    .sp-progress-fill { height: 100%; background: #1ed760; border-radius: 3px; transition: width .5s linear; position: relative; }
-    .sp-progress-fill::after {
-      content: ''; position: absolute; right: -5px; top: 50%; transform: translateY(-50%);
-      width: 11px; height: 11px; border-radius: 50%; background: #fff; opacity: 0; transition: opacity .15s;
-    }
-    .sp-progress-bar:hover .sp-progress-fill::after { opacity: 1; }
-    .sp-times { display: flex; justify-content: space-between; font-size: 0.65rem; color: rgba(255,255,255,.3); }
+    .sp-progress-fill { height: 100%; background: #1ed760; border-radius: 3px; transition: width .5s linear; }
+    .sp-times { display: flex; justify-content: space-between; font-size: 0.67rem; color: rgba(255,255,255,.3); }
 
     /* Contrôles */
-    .sp-controls { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; }
+    .sp-controls { display: flex; align-items: center; justify-content: center; gap: 8px; }
     .sp-ctrl {
       background: none; border: none; cursor: pointer;
       color: rgba(255,255,255,.6); transition: all .18s;
       display: flex; align-items: center; justify-content: center;
-      border-radius: 50%; padding: 7px;
+      border-radius: 50%; padding: 9px;
     }
     .sp-ctrl:hover { color: #fff; transform: scale(1.12); }
     .sp-ctrl.active { color: #1ed760; }
-    .sp-ctrl svg { width: 16px; height: 16px; }
+    .sp-ctrl svg { width: 18px; height: 18px; }
     .sp-ctrl-play {
-      width: 46px; height: 46px; border-radius: 50%;
+      width: 52px; height: 52px; border-radius: 50%;
       background: #fff; border: none; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: all .18s; padding: 0;
     }
     .sp-ctrl-play:hover { transform: scale(1.07); background: #f0f0f0; }
-    .sp-ctrl-play svg { width: 20px; height: 20px; fill: #000; }
+    .sp-ctrl-play svg { width: 22px; height: 22px; fill: #000; }
 
-    /* Volume — slider touch-friendly pour Fire HD */
-    .sp-volume { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
-    .sp-vol-icon { font-size: 1rem; color: rgba(255,255,255,.4); flex-shrink: 0; }
-    .sp-vol-slider {
-      flex: 1; cursor: pointer; outline: none;
-      height: 32px;
-      accent-color: #1ed760;
+    /* Appareil */
+    .sp-device-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: 10px;
+      background: rgba(255,255,255,.05);
+      cursor: pointer; transition: background .18s;
     }
-    .sp-vol-pct {
-      font-size: 0.75rem; color: rgba(255,255,255,.35);
-      min-width: 32px; text-align: right; flex-shrink: 0;
-    }
+    .sp-device-bar:hover { background: rgba(255,255,255,.09); }
+    .sp-device-bar-icon  { font-size: 0.9rem; flex-shrink: 0; }
+    .sp-device-bar-name  { font-size: 0.78rem; color: rgba(255,255,255,.55); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sp-device-bar-arrow { font-size: 1rem; color: rgba(255,255,255,.2); flex-shrink: 0; }
 
     /* Playlists — colonne droite */
-    .sp-playlists { display: block; }
+    .sp-playlists { display: flex; flex-direction: column; height: 100%; }
     .sp-section-title {
       font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
       letter-spacing: .1em; color: rgba(255,255,255,.3);
-      padding: 10px 14px 6px;
+      padding: 12px 16px 8px; flex-shrink: 0;
       border-bottom: 1px solid rgba(255,255,255,.06);
     }
-    .sp-playlist-scroll { overflow-y: auto; max-height: 220px; }
+    .sp-playlist-scroll { overflow-y: auto; flex: 1; }
     .sp-playlist-scroll::-webkit-scrollbar { width: 3px; }
     .sp-playlist-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 3px; }
     .sp-playlist-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 8px 14px; cursor: pointer; transition: background .15s;
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 16px; cursor: pointer; transition: background .15s;
     }
     .sp-playlist-item:hover { background: rgba(255,255,255,.06); }
     .sp-playlist-item.active { background: rgba(30,215,96,.08); }
     .sp-pl-img {
-      width: 36px; height: 36px; border-radius: 5px;
+      width: 40px; height: 40px; border-radius: 6px;
       background: #282828; flex-shrink: 0; overflow: hidden;
-      display: flex; align-items: center; justify-content: center; font-size: 0.95rem;
+      display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
     }
     .sp-pl-img img { width: 100%; height: 100%; object-fit: cover; }
-    .sp-pl-name { font-size: 0.82rem; color: #fff; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sp-pl-count { font-size: 0.68rem; color: rgba(255,255,255,.3); margin-top: 1px; }
-    .sp-pl-playing { color: #1ed760; font-size: 0.7rem; margin-left: auto; flex-shrink: 0; }
-    .sp-nothing { padding: 20px; text-align: center; font-size: 0.82rem; color: rgba(255,255,255,.25); }
-
-    /* Barre appareil sous volume */
-    .sp-device-bar {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 4px 2px;
-      cursor: pointer; border-top: 1px solid rgba(255,255,255,.06);
-      margin-top: 8px;
-      transition: color .18s;
-    }
-    .sp-device-bar:hover { color: #1ed760; }
-    .sp-device-bar-icon { font-size: 0.85rem; color: rgba(255,255,255,.35); flex-shrink: 0; }
-    .sp-device-bar-name {
-      font-size: 0.78rem; color: rgba(255,255,255,.5);
-      flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      transition: color .18s;
-    }
-    .sp-device-bar:hover .sp-device-bar-name { color: #1ed760; }
-    .sp-device-bar-arrow { font-size: 0.9rem; color: rgba(255,255,255,.2); flex-shrink: 0; }
+    .sp-pl-name { font-size: 0.85rem; color: #fff; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sp-pl-playing { color: #1ed760; font-size: 0.75rem; margin-left: auto; flex-shrink: 0; }
+    .sp-nothing { padding: 24px; text-align: center; font-size: 0.85rem; color: rgba(255,255,255,.25); }
 
     /* Panneau appareils */
-    .sp-devices { padding: 0; }
+    .sp-devices { }
     .sp-device-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 16px; cursor: pointer; transition: background .15s;
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 20px; cursor: pointer; transition: background .15s;
     }
     .sp-device-item:hover { background: rgba(255,255,255,.06); }
     .sp-device-item.active { background: rgba(30,215,96,.08); }
-    .sp-device-icon { font-size: 1.2rem; flex-shrink: 0; }
-    .sp-device-name { font-size: 0.85rem; color: #fff; }
-    .sp-device-type { font-size: 0.7rem; color: rgba(255,255,255,.35); margin-top: 1px; }
-    .sp-device-active { color: #1ed760; font-size: 0.7rem; margin-left: auto; flex-shrink: 0; }
+    .sp-device-icon   { font-size: 1.3rem; flex-shrink: 0; }
+    .sp-device-name   { font-size: 0.88rem; color: #fff; font-weight: 500; }
+    .sp-device-type   { font-size: 0.72rem; color: rgba(255,255,255,.35); margin-top: 2px; }
+    .sp-device-active { color: #1ed760; font-size: 0.72rem; margin-left: auto; flex-shrink: 0; }
 
     /* ══════════════════════════════════════
        ÉCRAN DE VEILLE (Mode inactif)
@@ -3246,7 +3226,7 @@ function updateSpAuthBtn() {
   const btn = document.getElementById('sp-auth-btn');
   if (!btn) return;
   if (spState.token) {
-    btn.textContent = '⏻ Déconnexion';
+    btn.textContent = 'Déconnexion';
     btn.classList.add('connected');
   } else {
     btn.textContent = 'Se connecter';
@@ -3358,12 +3338,7 @@ function spPlayerHTML() {
       +   '<button class="sp-ctrl" onclick="spNext()">' + svgNext() + '</button>'
       +   '<button class="sp-ctrl' + (repeat !== 'off' ? ' active' : '') + '" id="sp-repeat" onclick="spToggleRepeat()">' + svgRepeat() + '</button>'
       + '</div>'
-      + '<div class="sp-volume">'
-      +   '<span class="sp-vol-icon">🔈</span>'
-      +   '<input type="range" class="sp-vol-slider" id="sp-vol-slider" min="0" max="100" value="' + vol + '" oninput="spVolumeInput(this.value)">'
-      +   '<span class="sp-vol-icon">🔊</span>'
-      +   '<span class="sp-vol-pct" id="sp-vol-pct">' + vol + '%</span>'
-      + '</div>'
+      // Volume retiré
       + '<div class="sp-device-bar" onclick="spShowDevices()">'
       +   '<span class="sp-device-bar-icon">📡</span>'
       +   '<span class="sp-device-bar-name" id="sp-device-bar-name">' + devName + '</span>'
@@ -3437,6 +3412,46 @@ async function fetchSpotifyDevices() {
 
 
 
+
+function spDevicesViewHTML() {
+  try {
+    const icons = { computer:'💻', smartphone:'📱', speaker:'🔊',
+                    tv:'📺', tablet:'📱', 'Cast Video':'📺', 'Cast Audio':'🔊' };
+    const devs  = Array.isArray(spState.devices) ? spState.devices : [];
+
+    let items = '';
+    if (devs.length === 0) {
+      items = '<div class="sp-nothing" style="padding:20px 16px">'
+        + '😶 Aucun appareil Spotify Connect trouvé.<br><br>'
+        + '<span style="font-size:0.72rem;color:rgba(255,255,255,.25)">'
+        + 'Ouvrez Spotify sur votre téléphone, ordinateur ou enceinte.'
+        + '</span></div>';
+    } else {
+      devs.forEach(function(dev) {
+        var icon = icons[dev.type] || '🎵';
+        var vol  = (dev.volume_percent != null) ? ' · ' + dev.volume_percent + '%' : '';
+        items += '<div class="sp-device-item' + (dev.is_active ? ' active' : '') + '"'
+          + ' onclick="spSelectDevice(\'' + dev.id + '\')">'  
+          + '<span class="sp-device-icon">' + icon + '</span>'
+          + '<div>'
+          + '<div class="sp-device-name">' + dev.name + '</div>'
+          + '<div class="sp-device-type">' + dev.type + vol + '</div>'
+          + '</div>'
+          + (dev.is_active ? '<span class="sp-device-active">✓ Actif</span>' : '')
+          + '</div>';
+      });
+    }
+
+    return '<div style="display:flex;align-items:center;padding:10px 16px 6px;border-bottom:1px solid rgba(255,255,255,.07)">'
+      + '<button onclick="spShowPlayer()" style="background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:0.9rem;padding:4px 8px">← Retour</button>'
+      + '<span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.3);margin-left:6px">📡 Appareils</span>'
+      + '<button onclick="fetchSpotifyDevices().then(renderSpotifyBody)" style="background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;font-size:0.85rem;margin-left:auto">↻</button>'
+      + '</div>'
+      + '<div class="sp-devices">' + items + '</div>';
+  } catch(err) {
+    return '<div style="color:#ff6464;padding:12px;font-size:0.8rem">⚠️ spDevicesViewHTML: ' + err.message + '</div>';
+  }
+}
 
 async function toggleSpoticeDevices() { spShowDevices(); }
 
