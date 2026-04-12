@@ -3113,24 +3113,51 @@ async function fetchSpotifyPlaylists() {
 }
 
 // ── Rendu ──
+// spState.view : 'player' | 'devices'
 function renderSpotifyBody() {
   const body = document.getElementById('sp-body');
   if (!body) return;
   if (!spState.token) { body.innerHTML = spLoginHTML(); return; }
 
-  if (spState.showDevices) {
-    body.innerHTML = spDevicesHTML();
-    fetchSpotifyDevices().then(renderSpotifyBody);
-    spState.showDevices = false;
+  if (spState.view === 'devices') {
+    body.innerHTML = spDevicesViewHTML();
+    attachSpotifyEvents();
     return;
   }
 
+  // Vue par défaut : player + playlists
+  spState.view = 'player';
   body.innerHTML =
     '<div class="sp-body-grid">'
     + '<div class="sp-col-left">' + spPlayerHTML() + '</div>'
     + '<div class="sp-col-right">' + spPlaylistsHTML() + '</div>'
     + '</div>';
   attachSpotifyEvents();
+}
+
+function spShowPlayer() {
+  spState.view = 'player';
+  renderSpotifyBody();
+}
+
+function spShowDevices() {
+  spState.view = 'devices';
+  fetchSpotifyDevices().then(renderSpotifyBody);
+  renderSpotifyBody(); // afficher de suite avec ce qu'on a
+}
+
+function spLogout() {
+  clearSpotifySession();
+  localStorage.removeItem('spotify_refresh_token');
+  spState.token = null;
+  spState.current = null;
+  spState.playlists = [];
+  spState.devices = [];
+  spState.view = 'player';
+  stopSpotifyPolling();
+  const btn = document.getElementById('btn-spotify');
+  if (btn) btn.classList.remove('playing');
+  renderSpotifyBody();
 }
 
 function renderNowPlaying() {
@@ -3170,7 +3197,7 @@ function spLoginHTML() {
   return '<div class="sp-login">'
     + '<div class="sp-login-icon">🎵</div>'
     + '<div class="sp-login-text">Connectez-vous à Spotify<br>pour contrôler votre musique.</div>'
-    + '<button class="sp-btn-login" onclick="spotifyLogin()">Se connecter</button>'
+    + '<button class="sp-btn-login" onclick="spotifyLogin()">Se connecter à Spotify</button>'
     + '</div>';
 }
 
