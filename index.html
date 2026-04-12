@@ -727,16 +727,13 @@
     }
     .sp-btn-login:hover { background: #1fdf64; transform: scale(1.03); }
 
-    /* Layout 2 colonnes */
-    .sp-body-grid {
-      display: grid; grid-template-columns: 1fr 1fr;
-      gap: 0; align-items: start;
+    /* Layout colonne unique scrollable */
+    .sp-body-grid { display: block; }
+    .sp-col-left { padding: 12px 16px 0; }
+    .sp-col-right {
+      border-top: 1px solid rgba(255,255,255,.07);
+      margin-top: 8px;
     }
-    .sp-col-left {
-      padding: 14px 16px;
-      border-right: 1px solid rgba(255,255,255,.07);
-    }
-    .sp-col-right { display: block; }
 
     /* Morceau en cours */
     .sp-now-playing { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
@@ -785,13 +782,17 @@
     .sp-ctrl-play:hover { transform: scale(1.07); background: #f0f0f0; }
     .sp-ctrl-play svg { width: 20px; height: 20px; fill: #000; }
 
-    /* Volume — slider touch-friendly */
-    .sp-volume { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
-    .sp-vol-icon { font-size: 0.85rem; color: rgba(255,255,255,.35); flex-shrink: 0; }
+    /* Volume — slider touch-friendly pour Fire HD */
+    .sp-volume { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+    .sp-vol-icon { font-size: 1rem; color: rgba(255,255,255,.4); flex-shrink: 0; }
     .sp-vol-slider {
       flex: 1; cursor: pointer; outline: none;
-      height: 28px; /* zone tactile grande pour Fire HD */
+      height: 32px;
       accent-color: #1ed760;
+    }
+    .sp-vol-pct {
+      font-size: 0.75rem; color: rgba(255,255,255,.35);
+      min-width: 32px; text-align: right; flex-shrink: 0;
     }
 
     /* Playlists — colonne droite */
@@ -802,7 +803,7 @@
       padding: 10px 14px 6px;
       border-bottom: 1px solid rgba(255,255,255,.06);
     }
-    .sp-playlist-scroll { overflow-y: auto; max-height: 320px; }
+    .sp-playlist-scroll { overflow-y: auto; max-height: 220px; }
     .sp-playlist-scroll::-webkit-scrollbar { width: 3px; }
     .sp-playlist-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 3px; }
     .sp-playlist-item {
@@ -2966,7 +2967,7 @@ async function spotifyLogin() {
     scope:                 SPOTIFY_SCOPES,
     code_challenge_method: 'S256',
     code_challenge:        challenge,
-    show_dialog:           'false',
+    show_dialog:           'true',
   });
   window.location.href = 'https://accounts.spotify.com/authorize?' + params.toString();
 }
@@ -3088,22 +3089,27 @@ async function openSpotifyPopup() {
     return;
   }
 
-  // Afficher un spinner pendant le chargement
-  document.getElementById('sp-body').innerHTML =
-    '<div style="display:flex;align-items:center;justify-content:center;padding:60px;color:rgba(255,255,255,.3);gap:12px">'
-    + '<div style="width:20px;height:20px;border:2px solid rgba(255,255,255,.15);border-top-color:#1ed760;border-radius:50%;animation:spin .7s linear infinite"></div>'
-    + '<span style="font-size:0.85rem">Chargement…</span></div>';
+  // Afficher le player immédiatement avec ce qu'on a déjà en mémoire
+  // (évite le spinner infini)
+  renderSpotifyBody();
 
-  // Charger les données indépendamment
-  fetchSpotifyPlaylists().then(() => {
-    if (spState.view === 'player' && spState.open) renderSpotifyBody();
-  });
+  // Charger tout en parallèle avec timeout de sécurité
+  try {
+    await Promise.race([
+      Promise.all([
+        fetchSpotifyNowPlaying(),
+        fetchSpotifyPlaylists(),
+        fetchSpotifyDevices(),
+      ]),
+      new Promise(resolve => setTimeout(resolve, 8000)), // timeout 8s
+    ]);
+  } catch(e) { /* continuer même si erreur */ }
 
-  fetchSpotifyDevices();
-
-  await fetchSpotifyNowPlaying();
-  renderSpotifyBody();  // render complet avec track (playlists peuvent encore charger)
-  startSpotifyPolling();
+  // Rendre une seule fois après tous les fetches
+  if (spState.open) {
+    renderSpotifyBody();
+    startSpotifyPolling();
+  }
 }
 function closeSpotifyPopup() {
   spState.open = false;
@@ -3178,7 +3184,7 @@ function renderSpotifyBody() {
     return;
   }
 
-  // Vue par défaut : player + playlists
+  // Vue par défaut : player puis playlists en dessous
   spState.view = 'player';
   body.innerHTML =
     '<div class="sp-body-grid">'
@@ -3186,6 +3192,10 @@ function renderSpotifyBody() {
     + '<div class="sp-col-right">' + spPlaylistsHTML() + '</div>'
     + '</div>';
   attachSpotifyEvents();
+  // Afficher le % volume initial
+  const sl = document.getElementById('sp-vol-slider');
+  const pct = document.getElementById('sp-vol-pct');
+  if (sl && pct) pct.textContent = sl.value + '%';
 }
 
 function spShowPlayer() {
@@ -3320,8 +3330,9 @@ function spPlayerHTML() {
     + '</div>'
     + '<div class="sp-volume">'
     + '<span class="sp-vol-icon">🔈</span>'
-    + '<input type="range" class="sp-vol-slider" id="sp-vol-slider" min="0" max="100" value="' + vol + '" oninput="spSetVolume(this.value)">'
+    + '<input type="range" class="sp-vol-slider" id="sp-vol-slider" min="0" max="100" value="' + vol + '" oninput="spVolumeInput(this.value)">'
     + '<span class="sp-vol-icon">🔊</span>'
+    + '<span class="sp-vol-pct" id="sp-vol-pct">' + vol + '%</span>'
     + '</div>'
     // Appareil actif cliquable sous le volume
     + '<div class="sp-device-bar" onclick="spShowDevices()" title="Changer d&apos;appareil">'
@@ -3413,9 +3424,15 @@ async function spSeek(event) {
   const pos = Math.round(pct * spState.current.item.duration_ms);
   await spFetch('/me/player/seek?position_ms=' + pos, 'PUT');
 }
+function spVolumeInput(value) {
+  const pct = document.getElementById('sp-vol-pct');
+  if (pct) pct.textContent = Math.round(parseInt(value)) + '%';
+  spSetVolume(value);
+}
 async function spSetVolume(value) {
   const vol = Math.max(0, Math.min(100, Math.round(parseInt(value))));
-  await spFetch('/me/player/volume?volume_percent=' + vol, 'PUT');
+  const ok = await spFetch('/me/player/volume?volume_percent=' + vol, 'PUT');
+  if (ok === null) showToast('⚠️ Volume : aucun appareil actif', 'error');
 }
 async function spPlayPlaylist(uri) {
   await spFetch('/me/player/play', 'PUT', { context_uri: uri });
