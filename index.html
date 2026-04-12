@@ -671,7 +671,7 @@
       position: fixed; top: 50%; left: 50%;
       transform: translate(-50%, -48%) scale(.96);
       width: min(820px, 95vw);
-      max-height: 88vh;
+      height: min(500px, 88vh);
       background: #121212; border-radius: 18px;
       box-shadow: 0 24px 60px rgba(0,0,0,.75);
       border: 1px solid rgba(255,255,255,.09);
@@ -681,6 +681,9 @@
       display: flex; flex-direction: column;
     }
     .spotify-popup.open { opacity: 1; pointer-events: all; transform: translate(-50%, -50%) scale(1); }
+    /* Le corps du popup prend tout l'espace restant sous le header */
+    #sp-body { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+    #sp-body > .sp-body-grid { flex: 1; min-height: 0; }
 
     /* Header */
     .sp-header {
@@ -757,7 +760,7 @@
     .sp-track-album  { font-size: 0.72rem; color: rgba(255,255,255,.3); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* Progression */
-    .sp-progress { }
+    .sp-progress { }  /* Pas de padding propre, géré par sp-col-left */
     .sp-progress-bar {
       width: 100%; height: 5px; background: rgba(255,255,255,.15);
       border-radius: 3px; cursor: pointer; position: relative; margin-bottom: 5px;
@@ -788,7 +791,7 @@
     /* Appareil */
     .sp-device-bar {
       display: flex; align-items: center; gap: 8px;
-      padding: 8px 10px; border-radius: 10px;
+      padding: 9px 12px; border-radius: 10px;
       background: rgba(255,255,255,.05);
       cursor: pointer; transition: background .18s;
     }
@@ -802,7 +805,7 @@
     .sp-section-title {
       font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
       letter-spacing: .1em; color: rgba(255,255,255,.3);
-      padding: 12px 16px 8px; flex-shrink: 0;
+      padding: 18px 20px 10px; flex-shrink: 0;
       border-bottom: 1px solid rgba(255,255,255,.06);
     }
     .sp-playlist-scroll { overflow-y: auto; flex: 1; }
@@ -810,7 +813,7 @@
     .sp-playlist-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 3px; }
     .sp-playlist-item {
       display: flex; align-items: center; gap: 12px;
-      padding: 10px 16px; cursor: pointer; transition: background .15s;
+      padding: 10px 20px; cursor: pointer; transition: background .15s;
     }
     .sp-playlist-item:hover { background: rgba(255,255,255,.06); }
     .sp-playlist-item.active { background: rgba(30,215,96,.08); }
@@ -3178,12 +3181,11 @@ function renderSpotifyBody() {
       return;
     }
     spState.view = 'player';
-    const playerHtml = spPlayerHTML();
-    const playlistHtml = spPlaylistsHTML();
-    body.innerHTML = playerHtml + playlistHtml;
-    const sl = document.getElementById('sp-vol-slider');
-    const pct = document.getElementById('sp-vol-pct');
-    if (sl && pct) pct.textContent = (sl.value || 50) + '%';
+    body.innerHTML =
+      '<div class="sp-body-grid">'
+      + '<div class="sp-col-left">'  + spPlayerHTML()    + '</div>'
+      + '<div class="sp-col-right">' + spPlaylistsHTML() + '</div>'
+      + '</div>';
   } catch(err) {
     body.innerHTML = '<div style="color:#ff6464;padding:20px;font-size:0.85rem">⚠️ Erreur JS : ' + err.message + '</div>';
   }
@@ -3364,7 +3366,6 @@ function spPlaylistsHTML() {
                        ? '<img src="' + pl.images[0].url + '" alt=""/>' : '🎵';
         var active   = pl.uri && pl.uri === ctx;
         var uri      = pl.uri ? pl.uri.replace(/'/g, '') : '';
-        var count    = (pl.tracks && pl.tracks.total != null) ? pl.tracks.total : '?';
         var pname    = pl.name || '(sans nom)';
         items += '<div class="sp-playlist-item' + (active ? ' active' : '') + '"'
                + ' onclick="spPlayPlaylist(\'' + uri + '\')">'
@@ -3372,7 +3373,6 @@ function spPlaylistsHTML() {
                + '<div class="sp-pl-img">' + img + '</div>'
                + '<div style="min-width:0;flex:1">'
                + '<div class="sp-pl-name">' + pname + '</div>'
-               + '<div class="sp-pl-count">' + count + ' titres</div>'
                + '</div>'
                + (active ? '<span class="sp-pl-playing">▶</span>' : '')
                + '</div>';
