@@ -646,6 +646,107 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 
+    /* ══════════════════════════════════════
+       ÉCRAN DE VEILLE (Mode inactif)
+    ══════════════════════════════════════ */
+    #screensaver {
+      position: fixed; inset: 0; z-index: 500;
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      cursor: pointer; overflow: hidden;
+      /* Transition fond */
+      transition: background .8s ease;
+    }
+    #screensaver.active { display: flex; }
+
+    /* Photo nature en fond */
+    #ss-bg-photo {
+      position: absolute; inset: 0; z-index: 0;
+      background-size: cover; background-position: center;
+      transition: opacity 1.2s ease;
+      opacity: 0;
+    }
+    #ss-bg-photo.loaded { opacity: 1; }
+
+    /* Overlay coloré selon heure + dégradé CSS fallback */
+    #ss-bg-gradient {
+      position: absolute; inset: 0; z-index: 1;
+      transition: background 2s ease;
+    }
+
+    /* Overlay sombre semi-transparent pour lisibilité */
+    #ss-overlay-dark {
+      position: absolute; inset: 0; z-index: 2;
+      background: linear-gradient(
+        to bottom,
+        rgba(0,0,0,.25) 0%,
+        rgba(0,0,0,.05) 40%,
+        rgba(0,0,0,.4)  100%
+      );
+    }
+
+    /* Contenu centré */
+    #ss-content {
+      position: relative; z-index: 3;
+      text-align: center; color: #fff;
+      padding: 40px;
+      text-shadow: 0 2px 20px rgba(0,0,0,.6);
+    }
+
+    /* Heure */
+    #ss-time {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: min(22vw, 20vh);
+      font-weight: 200; line-height: 1;
+      letter-spacing: -4px;
+      color: #fff;
+    }
+
+    /* Date */
+    #ss-date {
+      font-size: min(5vw, 4.5vh);
+      font-weight: 300; margin-top: 8px;
+      color: rgba(255,255,255,.85);
+      letter-spacing: .05em;
+    }
+
+    /* Météo */
+    #ss-weather {
+      margin-top: min(5vh, 32px);
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+    }
+    #ss-weather-icon { font-size: min(10vw, 9vh); line-height: 1; }
+    #ss-weather-right {}
+    #ss-weather-temp {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: min(12vw, 11vh); font-weight: 300; line-height: 1;
+      letter-spacing: -2px;
+    }
+    #ss-weather-desc {
+      font-size: min(3.5vw, 3vh); color: rgba(255,255,255,.75);
+      margin-top: 4px;
+    }
+
+    /* Barre de progression minute */
+    #ss-progress-bar {
+      position: absolute; bottom: 0; left: 0; right: 0; z-index: 3;
+      height: 3px; background: rgba(255,255,255,.15);
+    }
+    #ss-progress-fill {
+      height: 100%; background: rgba(255,255,255,.6);
+      width: 0%; transition: width 1s linear;
+      border-radius: 0 2px 2px 0;
+    }
+
+    /* Hint discret */
+    #ss-hint {
+      position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 3; font-size: 0.8rem; color: rgba(255,255,255,.3);
+      letter-spacing: .1em; text-transform: uppercase;
+      animation: ss-pulse 3s ease-in-out infinite;
+    }
+    @keyframes ss-pulse { 0%,100%{opacity:.2} 50%{opacity:.5} }
+
     /* ── Popup météo détaillée ── */
     .weather-popup-overlay {
       position: fixed; inset: 0; z-index: 350;
@@ -941,8 +1042,9 @@
   <!-- ══ PANNEAU PARAMÈTRES MÉTÉO ══ -->
   <div class="weather-settings-overlay" id="ws-overlay" onclick="closeWeatherSettings()"></div>
   <div class="weather-settings-panel" id="ws-panel">
-    <div class="ws-title">📍 Ville pour la météo</div>
-    <div class="ws-subtitle">Entrez le nom d'une ville pour obtenir sa météo.</div>
+    <div class="ws-title">⚙️ Paramètres</div>
+
+    <div class="ws-subtitle" style="margin-top:4px">📍 Ville pour la météo</div>
     <div class="ws-current" id="ws-current">
       <span>📍</span><span id="ws-current-city">Non défini</span>
     </div>
@@ -955,9 +1057,46 @@
       </button>
     </div>
     <div class="ws-result" id="ws-result"></div>
+
+    <div style="height:1px;background:var(--border);margin:14px 0"></div>
+
+    <div class="ws-subtitle">🌙 Délai de mise en veille</div>
+    <div style="margin-bottom:14px">
+      <select class="ws-input" id="ws-idle-delay" onchange="saveIdleDelay()"
+        style="padding:9px 12px;font-size:0.9rem">
+        <option value="0">Jamais</option>
+        <option value="5">5 minutes</option>
+        <option value="10">10 minutes</option>
+        <option value="15">15 minutes</option>
+        <option value="30" selected>30 minutes</option>
+        <option value="60">1 heure</option>
+        <option value="120">2 heures</option>
+      </select>
+    </div>
+
     <div class="ws-footer">
       <button class="ws-btn-cancel" onclick="closeWeatherSettings()">Fermer</button>
     </div>
+  </div>
+
+  <!-- ══ ÉCRAN DE VEILLE ══ -->
+  <div id="screensaver" onclick="wakeUp()">
+    <div id="ss-bg-photo"></div>
+    <div id="ss-bg-gradient"></div>
+    <div id="ss-overlay-dark"></div>
+    <div id="ss-content">
+      <div id="ss-time">00:00</div>
+      <div id="ss-date">—</div>
+      <div id="ss-weather">
+        <div id="ss-weather-icon">🌡️</div>
+        <div id="ss-weather-right">
+          <div id="ss-weather-temp">—°</div>
+          <div id="ss-weather-desc">—</div>
+        </div>
+      </div>
+    </div>
+    <div id="ss-progress-bar"><div id="ss-progress-fill"></div></div>
+    <div id="ss-hint">Toucher pour réveiller</div>
   </div>
 
   <!-- ══ POPUP MÉTÉO DÉTAILLÉE ══ -->
@@ -2537,6 +2676,203 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeWeatherPopup();
 });
 
+// ═══════════════════════════════════════════
+//   ÉCRAN DE VEILLE — Option C
+//   Photo Unsplash nature + overlay coloré
+//   selon l'heure, fallback dégradé CSS
+// ═══════════════════════════════════════════
+
+const IDLE_DELAY_KEY = 'gcal_idle_delay';
+const SS_GRADIENTS = [
+  // Nuit    (0h-5h)  : bleu nuit profond
+  'linear-gradient(135deg, #0a0e1a 0%, #1a2340 50%, #0d1b2a 100%)',
+  // Aube    (5h-7h)  : orange rosé
+  'linear-gradient(135deg, #1a0a00 0%, #4a1a0a 40%, #8b3a1a 100%)',
+  // Matin   (7h-10h) : ciel bleu clair
+  'linear-gradient(135deg, #0a2a4a 0%, #1a5a8a 50%, #2a7ab5 100%)',
+  // Midi    (10h-14h): vert forêt
+  'linear-gradient(135deg, #0a2a0a 0%, #1a5a2a 50%, #2a7a3a 100%)',
+  // Après-m (14h-17h): ocre doré
+  'linear-gradient(135deg, #2a1a00 0%, #5a3a00 50%, #8a5a10 100%)',
+  // Soir    (17h-20h): violet mauve
+  'linear-gradient(135deg, #1a0a2a 0%, #3a1a5a 50%, #5a2a7a 100%)',
+  // Nuit    (20h-24h): indigo sombre
+  'linear-gradient(135deg, #05050f 0%, #0f0f2a 50%, #15153a 100%)',
+];
+
+// Mots-clés nature pour Unsplash (rotation)
+const SS_UNSPLASH_QUERIES = [
+  'nature forest', 'mountain landscape', 'ocean sunset',
+  'winter snow forest', 'autumn leaves', 'spring flowers',
+  'northern lights', 'desert sunrise', 'tropical beach',
+  'lake reflection', 'misty forest', 'meadow sunrise',
+];
+
+let ssState = {
+  active:       false,
+  idleTimer:    null,
+  tickTimer:    null,
+  photoTimer:   null,
+  queryIdx:     0,
+  idleDelay:    30,     // minutes
+};
+
+// ── Charger / sauvegarder le délai ──
+function loadIdleDelay() {
+  try {
+    const v = parseInt(localStorage.getItem(IDLE_DELAY_KEY));
+    return isNaN(v) ? 30 : v;
+  } catch { return 30; }
+}
+function saveIdleDelay() {
+  const sel = document.getElementById('ws-idle-delay');
+  const val = parseInt(sel.value);
+  ssState.idleDelay = val;
+  localStorage.setItem(IDLE_DELAY_KEY, val);
+  resetIdleTimer();
+  showToast(val === 0 ? 'Veille désactivée' : 'Délai mis à jour : ' + sel.options[sel.selectedIndex].text, 'success');
+}
+
+// ── Initialiser le délai sauvegardé dans le select ──
+function initIdleSettings() {
+  ssState.idleDelay = loadIdleDelay();
+  const sel = document.getElementById('ws-idle-delay');
+  if (sel) sel.value = ssState.idleDelay;
+}
+
+// ── Réinitialiser le timer d'inactivité ──
+function resetIdleTimer() {
+  if (ssState.idleTimer) clearTimeout(ssState.idleTimer);
+  if (ssState.idleDelay === 0) return;
+  ssState.idleTimer = setTimeout(activateScreensaver, ssState.idleDelay * 60 * 1000);
+}
+
+// ── Écouter toute activité utilisateur ──
+function initActivityListeners() {
+  ['click','touchstart','keydown','mousemove'].forEach(evt => {
+    document.addEventListener(evt, () => {
+      if (!ssState.active) resetIdleTimer();
+    }, { passive: true });
+  });
+}
+
+// ── Activer l'écran de veille ──
+function activateScreensaver() {
+  ssState.active = true;
+  stopAutoRefresh(); // Suspendre les requêtes Google
+
+  const ss = document.getElementById('screensaver');
+  ss.classList.add('active');
+
+  // Mettre à jour heure/date/météo
+  updateScreensaverClock();
+  updateScreensaverWeather();
+
+  // Charger la première photo + gradient
+  updateScreensaverPhoto();
+
+  // Ticker : heure à la seconde + barre de progression
+  ssState.tickTimer = setInterval(() => {
+    updateScreensaverClock();
+    updateProgressBar();
+  }, 1000);
+
+  // Photo toutes les minutes
+  ssState.photoTimer = setInterval(() => {
+    ssState.queryIdx = (ssState.queryIdx + 1) % SS_UNSPLASH_QUERIES.length;
+    updateScreensaverPhoto();
+  }, 60 * 1000);
+}
+
+// ── Désactiver (wake up) ──
+function wakeUp() {
+  ssState.active = false;
+  document.getElementById('screensaver').classList.remove('active');
+
+  if (ssState.tickTimer)  { clearInterval(ssState.tickTimer);  ssState.tickTimer  = null; }
+  if (ssState.photoTimer) { clearInterval(ssState.photoTimer); ssState.photoTimer = null; }
+
+  // Reprendre les requêtes Google
+  if (state.isAuthenticated) {
+    startAutoRefresh();
+    fetchAllEvents().then(renderCalendar);
+  }
+
+  // Redémarrer le timer d'inactivité
+  resetIdleTimer();
+}
+
+// ── Horloge écran de veille ──
+function updateScreensaverClock() {
+  const now = new Date();
+  const hh  = String(now.getHours()).padStart(2, '0');
+  const mm  = String(now.getMinutes()).padStart(2, '0');
+  const ss  = String(now.getSeconds()).padStart(2, '0');
+  document.getElementById('ss-time').textContent = hh + ':' + mm;
+
+  const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const mois  = ['janvier','février','mars','avril','mai','juin',
+                  'juillet','août','septembre','octobre','novembre','décembre'];
+  document.getElementById('ss-date').textContent =
+    jours[now.getDay()] + ' ' + now.getDate() + ' ' + mois[now.getMonth()] + ' ' + now.getFullYear();
+}
+
+// ── Météo dans l'écran de veille (dernière connue) ──
+function updateScreensaverWeather() {
+  if (!state.weatherData) return;
+  const { data, cityName } = state.weatherData;
+  const cur  = data.current;
+  const temp = Math.round(cur.temperature_2m);
+  const code = cur.weather_code;
+  document.getElementById('ss-weather-icon').textContent  = WMO_ICONS[code]  || '🌡️';
+  document.getElementById('ss-weather-temp').textContent  = temp + '°C';
+  document.getElementById('ss-weather-desc').textContent  = WMO_DESC[code]   || '';
+}
+
+// ── Barre de progression ──
+function updateProgressBar() {
+  const secs = new Date().getSeconds();
+  document.getElementById('ss-progress-fill').style.width = (secs / 59 * 100) + '%';
+}
+
+// ── Photo + overlay coloré ──
+function updateScreensaverPhoto() {
+  const hour = new Date().getHours();
+  // Choisir le gradient selon l'heure
+  let gIdx = 0;
+  if (hour < 5)       gIdx = 0;
+  else if (hour < 7)  gIdx = 1;
+  else if (hour < 10) gIdx = 2;
+  else if (hour < 14) gIdx = 3;
+  else if (hour < 17) gIdx = 4;
+  else if (hour < 20) gIdx = 5;
+  else                gIdx = 6;
+
+  // Appliquer le gradient CSS (fallback toujours visible)
+  const gradEl = document.getElementById('ss-bg-gradient');
+  gradEl.style.background = SS_GRADIENTS[gIdx];
+  gradEl.style.opacity = '1';
+
+  // Charger la photo Unsplash (1200x900 pour Fire HD 8)
+  const query   = encodeURIComponent(SS_UNSPLASH_QUERIES[ssState.queryIdx]);
+  const photoEl = document.getElementById('ss-bg-photo');
+  photoEl.classList.remove('loaded');
+
+  const img = new Image();
+  const url = 'https://source.unsplash.com/1280x800/?' + query + '&sig=' + Date.now();
+  img.onload = () => {
+    photoEl.style.backgroundImage = 'url(' + url + ')';
+    photoEl.classList.add('loaded');
+    // Une fois la photo chargée, réduire l'opacité du gradient
+    gradEl.style.opacity = '0.55';
+  };
+  img.onerror = () => {
+    // Photo indisponible → garder seulement le gradient
+    gradEl.style.opacity = '1';
+  };
+  img.src = url;
+}
+
 function init() {
   renderCalendar();
   loadGoogleAPI();
@@ -2544,6 +2880,9 @@ function init() {
   setInterval(updateClock, 30000);
   loadWeather();
   setInterval(loadWeather, 30 * 60 * 1000);
+  initIdleSettings();
+  initActivityListeners();
+  resetIdleTimer();
 }
 
 init();
