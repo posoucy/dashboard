@@ -730,16 +730,13 @@
     /* Layout 2 colonnes */
     .sp-body-grid {
       display: grid; grid-template-columns: 1fr 1fr;
-      gap: 0; min-height: 320px;
+      gap: 0; align-items: start;
     }
     .sp-col-left {
       padding: 14px 16px;
       border-right: 1px solid rgba(255,255,255,.07);
     }
-    .sp-col-right {
-      display: flex; flex-direction: column;
-      min-height: 0; overflow: visible;
-    }
+    .sp-col-right { display: block; }
 
     /* Morceau en cours */
     .sp-now-playing { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
@@ -788,28 +785,24 @@
     .sp-ctrl-play:hover { transform: scale(1.07); background: #f0f0f0; }
     .sp-ctrl-play svg { width: 20px; height: 20px; fill: #000; }
 
-    /* Volume — input range natif pour fiabilité */
-    .sp-volume { display: flex; align-items: center; gap: 8px; }
+    /* Volume — slider touch-friendly */
+    .sp-volume { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
     .sp-vol-icon { font-size: 0.85rem; color: rgba(255,255,255,.35); flex-shrink: 0; }
     .sp-vol-slider {
-      flex: 1; -webkit-appearance: none; appearance: none;
-      height: 4px; border-radius: 2px; outline: none; cursor: pointer;
-      background: linear-gradient(to right, rgba(255,255,255,.6) 0%, rgba(255,255,255,.6) 50%, rgba(255,255,255,.15) 50%);
-    }
-    .sp-vol-slider::-webkit-slider-thumb {
-      -webkit-appearance: none; width: 14px; height: 14px;
-      border-radius: 50%; background: #fff; cursor: pointer;
+      flex: 1; cursor: pointer; outline: none;
+      height: 28px; /* zone tactile grande pour Fire HD */
+      accent-color: #1ed760;
     }
 
     /* Playlists — colonne droite */
-    .sp-playlists { display: flex; flex-direction: column; height: 100%; }
+    .sp-playlists { display: block; }
     .sp-section-title {
       font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
       letter-spacing: .1em; color: rgba(255,255,255,.3);
-      padding: 10px 14px 6px; flex-shrink: 0;
+      padding: 10px 14px 6px;
       border-bottom: 1px solid rgba(255,255,255,.06);
     }
-    .sp-playlist-scroll { overflow-y: auto; height: 280px; }
+    .sp-playlist-scroll { overflow-y: auto; max-height: 320px; }
     .sp-playlist-scroll::-webkit-scrollbar { width: 3px; }
     .sp-playlist-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 3px; }
     .sp-playlist-item {
@@ -1518,7 +1511,7 @@
 // ═══════════════════════════════════════════
 const GOOGLE_CONFIG = {
   clientId:     '647348410681-90bses902v8ln2766frod7lt29jske7u.apps.googleusercontent.com',
-  apiKey:       'AIzaSyBSbgEvnuLAiIg71kk4K2k-RltRPorYLMss',
+  apiKey:       'AIzaSyBSbgEvnuLAiIg71kk4K2k-RltRPorYLMs',
   scopes:       'https://www.googleapis.com/auth/calendar',
   discoveryDoc: 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
 };
@@ -3162,8 +3155,13 @@ async function fetchSpotifyNowPlaying() {
   }
 }
 async function fetchSpotifyPlaylists() {
-  const data = await spFetch('/me/playlists?limit=30');
-  spState.playlists = data ? data.items || [] : [];
+  try {
+    const data = await spFetch('/me/playlists?limit=50');
+    spState.playlists = (data && Array.isArray(data.items)) ? data.items : [];
+  } catch(e) {
+    console.error('fetchSpotifyPlaylists', e);
+    spState.playlists = [];
+  }
 }
 
 // ── Rendu ──
@@ -3378,12 +3376,7 @@ async function spSelectDevice(deviceId) {
 }
 
 function attachSpotifyEvents() {
-  // Initialiser le dégradé du slider volume
-  const slider = document.getElementById('sp-vol-slider');
-  if (slider) {
-    const vol = parseInt(slider.value) || 50;
-    slider.style.background = 'linear-gradient(to right, rgba(255,255,255,.6) 0%, rgba(255,255,255,.6) ' + vol + '%, rgba(255,255,255,.15) ' + vol + '%)';
-  }
+  // Rien à faire — le slider natif gère son propre rendu
 }
 
 // ── Contrôles ──
@@ -3421,11 +3414,7 @@ async function spSeek(event) {
   await spFetch('/me/player/seek?position_ms=' + pos, 'PUT');
 }
 async function spSetVolume(value) {
-  const vol = Math.round(parseInt(value));
-  // Mettre à jour le style dégradé du slider
-  const slider = document.getElementById('sp-vol-slider');
-  if (slider) slider.style.background =
-    'linear-gradient(to right, rgba(255,255,255,.6) 0%, rgba(255,255,255,.6) ' + vol + '%, rgba(255,255,255,.15) ' + vol + '%)';
+  const vol = Math.max(0, Math.min(100, Math.round(parseInt(value))));
   await spFetch('/me/player/volume?volume_percent=' + vol, 'PUT');
 }
 async function spPlayPlaylist(uri) {
