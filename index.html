@@ -3375,23 +3375,44 @@ function spPlayerHTML() {
 }
 
 function spPlaylistsHTML() {
-  const currentCtx = spState.current && spState.current.context ? spState.current.context.uri : '';
-  let html = '<div class="sp-playlists"><div class="sp-section-title">Listes de lecture</div><div class="sp-playlist-scroll">';
-  if (!spState.playlists.length) {
-    html += '<div class="sp-nothing">Aucune playlist</div>';
-  } else {
-    spState.playlists.forEach(pl => {
-      const img     = pl.images && pl.images[0] ? '<img src="' + pl.images[0].url + '" alt=""/>' : '🎵';
-      const isActive = pl.uri === currentCtx;
-      html += '<div class="sp-playlist-item' + (isActive ? ' active' : '') + '" onclick="spPlayPlaylist(\'' + pl.uri + '\')">'
-        + '<div class="sp-pl-img">' + img + '</div>'
-        + '<div style="min-width:0;flex:1"><div class="sp-pl-name">' + pl.name + '</div><div class="sp-pl-count">' + pl.tracks.total + ' titres</div></div>'
-        + (isActive ? '<span class="sp-pl-playing">▶</span>' : '')
-        + '</div>';
-    });
+  try {
+    const ctx  = spState.current && spState.current.context ? (spState.current.context.uri || '') : '';
+    const list = Array.isArray(spState.playlists) ? spState.playlists.filter(p => p && p.name) : [];
+    const n    = list.length;
+
+    let items = '';
+    if (n === 0) {
+      items = '<div class="sp-nothing">Aucune liste de lecture</div>';
+    } else {
+      list.forEach(function(pl) {
+        var img      = (pl.images && pl.images[0] && pl.images[0].url)
+                       ? '<img src="' + pl.images[0].url + '" alt=""/>' : '🎵';
+        var active   = pl.uri && pl.uri === ctx;
+        var uri      = pl.uri ? pl.uri.replace(/'/g, '') : '';
+        var count    = (pl.tracks && pl.tracks.total != null) ? pl.tracks.total : '?';
+        var pname    = pl.name || '(sans nom)';
+        items += '<div class="sp-playlist-item' + (active ? ' active' : '') + '"'
+               + ' onclick="spPlayPlaylist(\'' + uri + '\')">'
+
+               + '<div class="sp-pl-img">' + img + '</div>'
+               + '<div style="min-width:0;flex:1">'
+               + '<div class="sp-pl-name">' + pname + '</div>'
+               + '<div class="sp-pl-count">' + count + ' titres</div>'
+               + '</div>'
+               + (active ? '<span class="sp-pl-playing">▶</span>' : '')
+               + '</div>';
+      });
+    }
+
+    return '<div class="sp-playlists">'
+      + '<div class="sp-section-title">Listes de lecture'
+      + (n > 0 ? ' <span style="opacity:.4;font-weight:400">(' + n + ')</span>' : '')
+      + '</div>'
+      + '<div class="sp-playlist-scroll">' + items + '</div>'
+      + '</div>';
+  } catch(err) {
+    return '<div style="color:#ff6464;padding:12px;font-size:0.8rem">⚠️ spPlaylistsHTML: ' + err.message + '</div>';
   }
-  html += '</div></div>';
-  return html;
 }
 
 // ── Appareils disponibles ──
