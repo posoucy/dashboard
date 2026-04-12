@@ -692,15 +692,20 @@
     .sp-title-icon { color: #1ed760; font-size: 1rem; }
     .sp-status { font-size: 0.7rem; color: rgba(255,255,255,.3); margin-left: 6px; }
     .sp-header-right { display: flex; align-items: center; gap: 6px; margin-left: auto; }
-    /* Bouton appareil */
-    .sp-btn-device {
+    /* Bouton connexion/déconnexion Spotify dans le header */
+    .sp-btn-auth-spotify {
       background: none; border: 1px solid rgba(255,255,255,.15); cursor: pointer;
-      color: rgba(255,255,255,.45); border-radius: 20px; padding: 4px 10px;
-      font-size: 0.72rem; display: flex; align-items: center; gap: 5px;
-      transition: all .18s;
+      color: rgba(255,255,255,.45); border-radius: 20px; padding: 5px 12px;
+      font-size: 0.75rem; font-family: 'DM Sans', sans-serif; font-weight: 500;
+      transition: all .18s; white-space: nowrap;
     }
-    .sp-btn-device:hover { border-color: #1ed760; color: #1ed760; }
-    .sp-btn-device.connected { color: #1ed760; border-color: rgba(30,215,96,.4); }
+    .sp-btn-auth-spotify:hover { border-color: #1ed760; color: #1ed760; }
+    .sp-btn-auth-spotify.connected {
+      color: rgba(255,100,100,.7); border-color: rgba(255,80,80,.3);
+    }
+    .sp-btn-auth-spotify.connected:hover {
+      color: #ff6464; border-color: rgba(255,80,80,.6);
+    }
     .sp-close {
       width: 28px; height: 28px; border-radius: 50%;
       background: rgba(255,255,255,.08); border: none;
@@ -823,6 +828,24 @@
     .sp-pl-count { font-size: 0.68rem; color: rgba(255,255,255,.3); margin-top: 1px; }
     .sp-pl-playing { color: #1ed760; font-size: 0.7rem; margin-left: auto; flex-shrink: 0; }
     .sp-nothing { padding: 20px; text-align: center; font-size: 0.82rem; color: rgba(255,255,255,.25); }
+
+    /* Barre appareil sous volume */
+    .sp-device-bar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 4px 2px;
+      cursor: pointer; border-top: 1px solid rgba(255,255,255,.06);
+      margin-top: 8px;
+      transition: color .18s;
+    }
+    .sp-device-bar:hover { color: #1ed760; }
+    .sp-device-bar-icon { font-size: 0.85rem; color: rgba(255,255,255,.35); flex-shrink: 0; }
+    .sp-device-bar-name {
+      font-size: 0.78rem; color: rgba(255,255,255,.5);
+      flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      transition: color .18s;
+    }
+    .sp-device-bar:hover .sp-device-bar-name { color: #1ed760; }
+    .sp-device-bar-arrow { font-size: 0.9rem; color: rgba(255,255,255,.2); flex-shrink: 0; }
 
     /* Panneau appareils */
     .sp-devices { padding: 0; }
@@ -1230,8 +1253,8 @@
       <div class="sp-title"><span class="sp-title-icon">🎵</span> Spotify</div>
       <span class="sp-status" id="sp-status"></span>
       <div class="sp-header-right">
-        <button class="sp-btn-device" id="sp-btn-device" onclick="toggleSpoticeDevices()" title="Sélectionner un appareil">
-          📡 <span id="sp-device-name-btn">Appareil</span>
+        <button class="sp-btn-auth-spotify" id="sp-auth-btn" onclick="spToggleAuth()" title="Connexion / Déconnexion">
+          Se connecter
         </button>
         <button class="sp-close" onclick="closeSpotifyPopup()">✕</button>
       </div>
@@ -3058,17 +3081,25 @@ function toggleSpotifyPopup() {
   else              openSpotifyPopup();
 }
 async function openSpotifyPopup() {
-  spState.open = true;
+  spState.open  = true;
+  spState.view  = 'player';
   document.getElementById('sp-overlay').classList.add('open');
   document.getElementById('sp-popup').classList.add('open');
 
-  // Tenter de récupérer un token sauvegardé
+  // Tenter token sauvegardé
   if (!spState.token) spState.token = loadSpotifySession();
 
+  // Afficher immédiatement (avec ce qu'on a déjà en mémoire)
+  updateSpAuthBtn();
   renderSpotifyBody();
 
   if (spState.token) {
-    await Promise.all([fetchSpotifyNowPlaying(), fetchSpotifyPlaylists()]);
+    // Charger en parallèle et re-rendre une fois tout arrivé
+    await Promise.all([
+      fetchSpotifyNowPlaying(),
+      fetchSpotifyPlaylists(),
+      fetchSpotifyDevices(),
+    ]);
     renderSpotifyBody();
     startSpotifyPolling();
   }
@@ -3117,6 +3148,7 @@ async function fetchSpotifyPlaylists() {
 function renderSpotifyBody() {
   const body = document.getElementById('sp-body');
   if (!body) return;
+  updateSpAuthBtn();
   if (!spState.token) { body.innerHTML = spLoginHTML(); return; }
 
   if (spState.view === 'devices') {
@@ -3149,15 +3181,35 @@ function spShowDevices() {
 function spLogout() {
   clearSpotifySession();
   localStorage.removeItem('spotify_refresh_token');
-  spState.token = null;
+  spState.token   = null;
   spState.current = null;
   spState.playlists = [];
-  spState.devices = [];
-  spState.view = 'player';
+  spState.devices   = [];
+  spState.view      = 'player';
   stopSpotifyPolling();
   const btn = document.getElementById('btn-spotify');
   if (btn) btn.classList.remove('playing');
+  updateSpAuthBtn();
   renderSpotifyBody();
+}
+
+// Basculer connexion / déconnexion depuis le header
+function spToggleAuth() {
+  if (spState.token) spLogout();
+  else spotifyLogin();
+}
+
+// Mettre à jour le bouton connexion dans le header
+function updateSpAuthBtn() {
+  const btn = document.getElementById('sp-auth-btn');
+  if (!btn) return;
+  if (spState.token) {
+    btn.textContent = '⏻ Déconnexion';
+    btn.classList.add('connected');
+  } else {
+    btn.textContent = 'Se connecter';
+    btn.classList.remove('connected');
+  }
 }
 
 function renderNowPlaying() {
@@ -3236,6 +3288,12 @@ function spPlayerHTML() {
     + '<span class="sp-vol-icon">🔈</span>'
     + '<input type="range" class="sp-vol-slider" id="sp-vol-slider" min="0" max="100" value="' + vol + '" oninput="spSetVolume(this.value)">'
     + '<span class="sp-vol-icon">🔊</span>'
+    + '</div>'
+    // Appareil actif cliquable sous le volume
+    + '<div class="sp-device-bar" onclick="spShowDevices()" title="Changer d&apos;appareil">'
+    + '<span class="sp-device-bar-icon">📡</span>'
+    + '<span class="sp-device-bar-name" id="sp-device-bar-name">' + ((c && c.device) ? c.device.name : 'Aucun appareil') + '</span>'
+    + '<span class="sp-device-bar-arrow">›</span>'
     + '</div>';
 }
 
