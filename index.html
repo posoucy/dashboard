@@ -1495,8 +1495,8 @@
 // ═══════════════════════════════════════════
 const GOOGLE_CONFIG = {
   clientId:     '647348410681-90bses902v8ln2766frod7lt29jske7u.apps.googleusercontent.com',
-  apiKey:       'VOTRE_API_KEY',
-  scopes:       'AIzaSyBSbgEvnuLAiIg71kk4K2k-RltRPorYLMs',
+  apiKey:       'AIzaSyBSbgEvnuLAiIg71kk4K2k-RltRPorYLMs',
+  scopes:       'https://www.googleapis.com/auth/calendar',
   discoveryDoc: 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
 };
 
@@ -1672,12 +1672,11 @@ function getRedirectUri() {
 
 function buildOAuthUrl(prompt) {
   const params = new URLSearchParams({
-    client_id:              GOOGLE_CONFIG.clientId,
-    redirect_uri:           getRedirectUri(),
-    response_type:          'token',
-    scope:                  GOOGLE_CONFIG.scopes,
-    prompt:                 prompt || 'select_account',
-    include_granted_scopes: 'true',
+    client_id:     GOOGLE_CONFIG.clientId,
+    redirect_uri:  getRedirectUri(),
+    response_type: 'token',
+    scope:         GOOGLE_CONFIG.scopes,
+    prompt:        prompt || 'select_account',
   });
   return 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
 }
@@ -2898,8 +2897,7 @@ const SPOTIFY_SCOPES     = [
   'user-modify-playback-state',
   'user-read-currently-playing',
   'playlist-read-private',
-  'user-library-read',
-  'user-library-modify',
+  'playlist-read-collaborative',
 ].join(' ');
 const SPOTIFY_SESSION_KEY = 'spotify_session';
 
