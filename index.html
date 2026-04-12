@@ -1153,7 +1153,7 @@
           <div class="cal-nav-right">
             <div style="position:relative">
               <button class="btn-agendas" id="btn-agendas" onclick="toggleAgendaDropdown()">
-                🗂 <span class="agenda-badge" id="agenda-badge">0</span>
+                🗂 Agendas <span class="agenda-badge" id="agenda-badge">0</span>
               </button>
               <div class="agenda-dropdown" id="agenda-dropdown">
                 <div class="agenda-dropdown-title">Mes agendas <span style="font-weight:400;opacity:.6;font-size:.68rem">— ★ = défaut</span></div>
@@ -2593,6 +2593,9 @@ async function loadWeather() {
     fcEl.innerHTML = fcHTML;
     fcEl.style.display = 'flex';
 
+    // Mettre à jour l'écran de veille si actif
+    if (ssState.active) updateScreensaverWeather();
+
   } catch(e) {
     nowEl.innerHTML = '<div class="weather-loading">Météo indisponible —<br/>Activez la localisation.</div>';
   }
@@ -2865,7 +2868,7 @@ function init() {
   updateClock();
   setInterval(updateClock, 30000);
   loadWeather();
-  setInterval(loadWeather, 30 * 60 * 1000);
+  setInterval(loadWeather, 60 * 1000); // toutes les minutes
   initIdleSettings();
   initActivityListeners();
   resetIdleTimer();
