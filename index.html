@@ -672,11 +672,14 @@
     .spotify-popup {
       position: fixed; top: 50%; left: 50%;
       transform: translate(-50%, -48%) scale(.96);
-      width: min(820px, 97vw);
+      width: min(560px, 97vw);
+      max-height: 92vh;
       background: #121212; border-radius: 20px;
       box-shadow: 0 24px 60px rgba(0,0,0,.7);
       border: 1px solid rgba(255,255,255,.08);
-      z-index: 351; overflow: hidden;
+      z-index: 351;
+      overflow-x: hidden;
+      overflow-y: auto;
       opacity: 0; pointer-events: none;
       transition: opacity .28s, transform .28s cubic-bezier(.34,1.1,.64,1);
     }
@@ -3161,11 +3164,23 @@ async function fetchSpotifyNowPlaying() {
   }
 }
 async function fetchSpotifyPlaylists() {
+  if (!spState.token) return;
   try {
-    const data = await spFetch('/me/playlists?limit=50');
+    const resp = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
+      headers: { Authorization: 'Bearer ' + spState.token }
+    });
+    if (!resp.ok) {
+      showToast('🎵 Playlists : erreur HTTP ' + resp.status, 'error');
+      spState.playlists = [];
+      return;
+    }
+    const data = await resp.json();
     spState.playlists = (data && Array.isArray(data.items)) ? data.items : [];
+    if (spState.playlists.length === 0) {
+      showToast('🎵 Playlists : 0 trouvée (compte vide?)', 'error');
+    }
   } catch(e) {
-    console.error('fetchSpotifyPlaylists', e);
+    showToast('🎵 Playlists : erreur réseau', 'error');
     spState.playlists = [];
   }
 }
@@ -3310,8 +3325,8 @@ function spPlayerHTML() {
     + (coverUrl ? '<img id="sp-cover-img" src="' + coverUrl + '" alt="cover"/>' : '<span id="sp-cover-img">🎵</span>')
     + '</div>'
     + '<div class="sp-track-info">'
-    + '<div class="sp-track-name" id="sp-track-name">' + (track ? track.name : 'Aucune lecture') + '</div>'
-    + '<div class="sp-track-artist" id="sp-track-artist">' + (track ? track.artists.map(a => a.name).join(', ') : '—') + '</div>'
+    + '<div class="sp-track-name" id="sp-track-name">' + (track ? track.name : '— Aucune lecture active —') + '</div>'
+    + '<div class="sp-track-artist" id="sp-track-artist">' + (track ? track.artists.map(a => a.name).join(', ') : 'Lancez de la musique sur votre téléphone') + '</div>'
     + '<div class="sp-track-album" id="sp-track-album">' + (track ? track.album.name : '') + '</div>'
     + '</div>'
     + '</div>'
@@ -3364,8 +3379,22 @@ function spPlaylistsHTML() {
 
 // ── Appareils disponibles ──
 async function fetchSpotifyDevices() {
-  const data = await spFetch('/me/player/devices');
-  spState.devices = data ? data.devices || [] : [];
+  if (!spState.token) return;
+  try {
+    const resp = await fetch('https://api.spotify.com/v1/me/player/devices', {
+      headers: { Authorization: 'Bearer ' + spState.token }
+    });
+    if (!resp.ok) {
+      showToast('📡 Appareils : erreur HTTP ' + resp.status, 'error');
+      spState.devices = [];
+      return;
+    }
+    const data = await resp.json();
+    spState.devices = data ? data.devices || [] : [];
+  } catch(e) {
+    showToast('📡 Appareils : erreur réseau', 'error');
+    spState.devices = [];
+  }
 }
 
 
@@ -3396,7 +3425,10 @@ async function spPlayPause() {
     await spFetch('/me/player/play', 'PUT');
   else
     await spFetch('/me/player/pause', 'PUT');
-  setTimeout(() => fetchSpotifyNowPlaying().then(renderNowPlaying), 300);
+  setTimeout(async () => {
+    await fetchSpotifyNowPlaying();
+    if (spState.view === 'player') renderSpotifyBody();
+  }, 500);
 }
 async function spNext() {
   await spFetch('/me/player/next', 'POST');
@@ -3409,13 +3441,19 @@ async function spPrev() {
 async function spToggleShuffle() {
   const cur = spState.current && spState.current.shuffle_state;
   await spFetch('/me/player/shuffle?state=' + (!cur), 'PUT');
-  setTimeout(() => fetchSpotifyNowPlaying().then(renderNowPlaying), 300);
+  setTimeout(async () => {
+    await fetchSpotifyNowPlaying();
+    if (spState.view === 'player') renderSpotifyBody();
+  }, 500);
 }
 async function spToggleRepeat() {
   const cur = spState.current ? spState.current.repeat_state : 'off';
   const next = cur === 'off' ? 'context' : cur === 'context' ? 'track' : 'off';
   await spFetch('/me/player/repeat?state=' + next, 'PUT');
-  setTimeout(() => fetchSpotifyNowPlaying().then(renderNowPlaying), 300);
+  setTimeout(async () => {
+    await fetchSpotifyNowPlaying();
+    if (spState.view === 'player') renderSpotifyBody();
+  }, 500);
 }
 async function spSeek(event) {
   if (!spState.current || !spState.current.item) return;
