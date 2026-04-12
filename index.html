@@ -3190,27 +3190,23 @@ async function fetchSpotifyPlaylists() {
 function renderSpotifyBody() {
   const body = document.getElementById('sp-body');
   if (!body) return;
-  updateSpAuthBtn();
-  if (!spState.token) { body.innerHTML = spLoginHTML(); return; }
-
-  if (spState.view === 'devices') {
-    body.innerHTML = spDevicesViewHTML();
-    attachSpotifyEvents();
-    return;
+  try {
+    updateSpAuthBtn();
+    if (!spState.token) { body.innerHTML = spLoginHTML(); return; }
+    if (spState.view === 'devices') {
+      body.innerHTML = spDevicesViewHTML();
+      return;
+    }
+    spState.view = 'player';
+    const playerHtml = spPlayerHTML();
+    const playlistHtml = spPlaylistsHTML();
+    body.innerHTML = playerHtml + playlistHtml;
+    const sl = document.getElementById('sp-vol-slider');
+    const pct = document.getElementById('sp-vol-pct');
+    if (sl && pct) pct.textContent = (sl.value || 50) + '%';
+  } catch(err) {
+    body.innerHTML = '<div style="color:#ff6464;padding:20px;font-size:0.85rem">⚠️ Erreur JS : ' + err.message + '</div>';
   }
-
-  // Vue par défaut : player puis playlists en dessous
-  spState.view = 'player';
-  body.innerHTML =
-    '<div class="sp-body-grid">'
-    + '<div class="sp-col-left">' + spPlayerHTML() + '</div>'
-    + '<div class="sp-col-right">' + spPlaylistsHTML() + '</div>'
-    + '</div>';
-  attachSpotifyEvents();
-  // Afficher le % volume initial
-  const sl = document.getElementById('sp-vol-slider');
-  const pct = document.getElementById('sp-vol-pct');
-  if (sl && pct) pct.textContent = sl.value + '%';
 }
 
 function spShowPlayer() {
@@ -3313,48 +3309,69 @@ function spLoginHTML() {
 }
 
 function spPlayerHTML() {
-  const c = spState.current;
-  const track = c && c.item ? c.item : null;
-  const isPlaying = c && c.is_playing;
-  const coverUrl  = track && track.album.images[0] ? track.album.images[0].url : '';
-  const pct = (track && track.duration_ms > 0) ? (c.progress_ms / track.duration_ms * 100) : 0;
+  try {
+    const c      = spState.current || null;
+    const track  = (c && c.item)   ? c.item : null;
+    const playing= !!(c && c.is_playing);
+    const cover  = (track && track.album && track.album.images && track.album.images[0])
+                   ? track.album.images[0].url : '';
+    const name   = track ? (track.name || '?') : '— Aucune lecture active —';
+    const artist = track ? ((track.artists || []).map(a => a.name).join(', ') || '?')
+                         : 'Lancez de la musique sur votre téléphone';
+    const album  = track ? (track.album ? track.album.name || '' : '') : '';
+    const dur    = (track && track.duration_ms) ? track.duration_ms : 0;
+    const pos    = (c && c.progress_ms) ? c.progress_ms : 0;
+    const pct    = dur > 0 ? (pos / dur * 100).toFixed(1) : 0;
+    const vol    = (c && c.device && c.device.volume_percent != null)
+                   ? c.device.volume_percent : 50;
+    const devName= (c && c.device && c.device.name) ? c.device.name : 'Aucun appareil';
+    const shuffle= !!(c && c.shuffle_state);
+    const repeat = (c && c.repeat_state) ? c.repeat_state : 'off';
 
-  const vol = (c && c.device) ? c.device.volume_percent : 50;
-  return '<div class="sp-now-playing">'
-    + '<div class="sp-cover">'
-    + (coverUrl ? '<img id="sp-cover-img" src="' + coverUrl + '" alt="cover"/>' : '<span id="sp-cover-img">🎵</span>')
-    + '</div>'
-    + '<div class="sp-track-info">'
-    + '<div class="sp-track-name" id="sp-track-name">' + (track ? track.name : '— Aucune lecture active —') + '</div>'
-    + '<div class="sp-track-artist" id="sp-track-artist">' + (track ? track.artists.map(a => a.name).join(', ') : 'Lancez de la musique sur votre téléphone') + '</div>'
-    + '<div class="sp-track-album" id="sp-track-album">' + (track ? track.album.name : '') + '</div>'
-    + '</div>'
-    + '</div>'
-    + '<div class="sp-progress">'
-    + '<div class="sp-progress-bar" onclick="spSeek(event)">'
-    + '<div class="sp-progress-fill" id="sp-prog-fill" style="width:' + pct + '%"></div>'
-    + '</div>'
-    + '<div class="sp-times"><span id="sp-pos">' + msToTime(c ? c.progress_ms : 0) + '</span><span id="sp-dur">' + msToTime(track ? track.duration_ms : 0) + '</span></div>'
-    + '</div>'
-    + '<div class="sp-controls">'
-    + '<button class="sp-ctrl' + (c && c.shuffle_state ? ' active' : '') + '" id="sp-shuffle" onclick="spToggleShuffle()" title="Aléatoire">' + svgShuffle() + '</button>'
-    + '<button class="sp-ctrl" onclick="spPrev()" title="Précédent">' + svgPrev() + '</button>'
-    + '<button class="sp-ctrl-play" id="sp-play-btn" onclick="spPlayPause()">' + (isPlaying ? svgPause() : svgPlay()) + '</button>'
-    + '<button class="sp-ctrl" onclick="spNext()" title="Suivant">' + svgNext() + '</button>'
-    + '<button class="sp-ctrl' + (c && c.repeat_state !== 'off' ? ' active' : '') + '" id="sp-repeat" onclick="spToggleRepeat()" title="Répéter">' + svgRepeat() + '</button>'
-    + '</div>'
-    + '<div class="sp-volume">'
-    + '<span class="sp-vol-icon">🔈</span>'
-    + '<input type="range" class="sp-vol-slider" id="sp-vol-slider" min="0" max="100" value="' + vol + '" oninput="spVolumeInput(this.value)">'
-    + '<span class="sp-vol-icon">🔊</span>'
-    + '<span class="sp-vol-pct" id="sp-vol-pct">' + vol + '%</span>'
-    + '</div>'
-    // Appareil actif cliquable sous le volume
-    + '<div class="sp-device-bar" onclick="spShowDevices()" title="Changer d&apos;appareil">'
-    + '<span class="sp-device-bar-icon">📡</span>'
-    + '<span class="sp-device-bar-name" id="sp-device-bar-name">' + ((c && c.device) ? c.device.name : 'Aucun appareil') + '</span>'
-    + '<span class="sp-device-bar-arrow">›</span>'
-    + '</div>';
+    return ''
+      + '<div class="sp-now-playing">'
+      +   '<div class="sp-cover">'
+      +     (cover ? '<img id="sp-cover-img" src="' + cover + '" alt="cover"/>'
+                   : '<span id="sp-cover-img">🎵</span>')
+      +   '</div>'
+      +   '<div class="sp-track-info">'
+      +     '<div class="sp-track-name" id="sp-track-name">' + name   + '</div>'
+      +     '<div class="sp-track-artist" id="sp-track-artist">' + artist + '</div>'
+      +     '<div class="sp-track-album"  id="sp-track-album">'  + album  + '</div>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="sp-progress">'
+      +   '<div class="sp-progress-bar" onclick="spSeek(event)">'
+      +     '<div class="sp-progress-fill" id="sp-prog-fill" style="width:' + pct + '%"></div>'
+      +   '</div>'
+      +   '<div class="sp-times">'
+      +     '<span id="sp-pos">' + msToTime(pos) + '</span>'
+      +     '<span id="sp-dur">' + msToTime(dur) + '</span>'
+      +   '</div>'
+      + '</div>'
+      + '<div class="sp-controls">'
+      +   '<button class="sp-ctrl' + (shuffle ? ' active' : '') + '" id="sp-shuffle" onclick="spToggleShuffle()">' + svgShuffle() + '</button>'
+      +   '<button class="sp-ctrl" onclick="spPrev()">' + svgPrev() + '</button>'
+      +   '<button class="sp-ctrl-play" id="sp-play-btn" onclick="spPlayPause()">'
+      +     (playing ? svgPause() : svgPlay())
+      +   '</button>'
+      +   '<button class="sp-ctrl" onclick="spNext()">' + svgNext() + '</button>'
+      +   '<button class="sp-ctrl' + (repeat !== 'off' ? ' active' : '') + '" id="sp-repeat" onclick="spToggleRepeat()">' + svgRepeat() + '</button>'
+      + '</div>'
+      + '<div class="sp-volume">'
+      +   '<span class="sp-vol-icon">🔈</span>'
+      +   '<input type="range" class="sp-vol-slider" id="sp-vol-slider" min="0" max="100" value="' + vol + '" oninput="spVolumeInput(this.value)">'
+      +   '<span class="sp-vol-icon">🔊</span>'
+      +   '<span class="sp-vol-pct" id="sp-vol-pct">' + vol + '%</span>'
+      + '</div>'
+      + '<div class="sp-device-bar" onclick="spShowDevices()">'
+      +   '<span class="sp-device-bar-icon">📡</span>'
+      +   '<span class="sp-device-bar-name" id="sp-device-bar-name">' + devName + '</span>'
+      +   '<span class="sp-device-bar-arrow">›</span>'
+      + '</div>';
+  } catch(err) {
+    return '<div style="color:#ff6464;padding:12px;font-size:0.8rem">⚠️ spPlayerHTML: ' + err.message + '</div>';
+  }
 }
 
 function spPlaylistsHTML() {
