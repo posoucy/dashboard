@@ -7,7 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <style>
     :root {
-      --bg:        #f5f0e8;
+      --bg:        #000000;
       --surface:   #fffdf7;
       --surface2:  #f0ebe0;
       --border:    #e2d9c8;
@@ -1233,6 +1233,30 @@ const DAYS_LONG = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','sam
 // ═══════════════════════════════════════════
 const SESSION_KEY = 'gcal_session';
 const PREFS_KEY   = 'gcal_prefs';
+const EVENTS_CACHE_KEY = 'gcal_events_cache';
+
+function saveEventsCache() {
+  try {
+    // Sauvegarder uniquement les événements Google (pas locaux)
+    const toSave = {};
+    Object.keys(state.events).forEach(k => {
+      const google = state.events[k].filter(e => e.source === 'google');
+      if (google.length) toSave[k] = google;
+    });
+    localStorage.setItem(EVENTS_CACHE_KEY, JSON.stringify({ ts: Date.now(), events: toSave }));
+  } catch(e) {}
+}
+
+function loadEventsCache() {
+  try {
+    const raw = localStorage.getItem(EVENTS_CACHE_KEY);
+    if (!raw) return null;
+    const { ts, events } = JSON.parse(raw);
+    // Cache valide 24h
+    if (Date.now() - ts > 24 * 60 * 60 * 1000) return null;
+    return events;
+  } catch { return null; }
+}
 
 function saveSession(token, expiresIn) {
   const expiry = Date.now() + (parseInt(expiresIn) - 60) * 1000;
@@ -1418,6 +1442,19 @@ async function connectWithToken(token, isNewToken) {
   if (isNewToken) showToast('✓ Connecté à Google Agenda', 'success');
   else            showToast('✓ Reconnecté automatiquement', 'success');
 
+  // Charger le cache immédiatement pour affichage instantané
+  const cached = loadEventsCache();
+  if (cached) {
+    Object.keys(cached).forEach(k => {
+      if (!state.events[k]) state.events[k] = [];
+      cached[k].forEach(ev => {
+        if (!state.events[k].find(e => e.id === ev.id))
+          state.events[k].push(ev);
+      });
+    });
+    renderCalendar(); // afficher immédiatement le cache
+  }
+
   await loadCalendarList();
   await fetchAllEvents();
   renderCalendar();
@@ -1425,16 +1462,56 @@ async function connectWithToken(token, isNewToken) {
   scheduleTokenRefresh();
 }
 
+// ── Refresh silencieux via iframe (ne vide PAS la page) ──
+function silentRefreshInBackground() {
+  // Éviter les refreshs en boucle
+  if (state._refreshing) return;
+  state._refreshing = true;
+
+  const url = buildOAuthUrl('none');
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;';
+  iframe.src = url;
+  document.body.appendChild(iframe);
+
+  // Écouter le retour de Google dans l'iframe
+  // Google va rediriger vers notre page avec le token dans le hash
+  // Mais dans une iframe same-origin, on peut lire la nouvelle URL
+  let tries = 0;
+  const check = setInterval(() => {
+    tries++;
+    try {
+      const hash = iframe.contentWindow?.location?.hash;
+      if (hash && hash.includes('access_token=')) {
+        clearInterval(check);
+        document.body.removeChild(iframe);
+        state._refreshing = false;
+        const params   = new URLSearchParams(hash.substring(1));
+        const newToken = params.get('access_token');
+        const expires  = params.get('expires_in');
+        if (newToken) {
+          saveSession(newToken, expires || 3599);
+          state.accessToken = newToken;
+          fetchAllEvents().then(renderCalendar);
+          scheduleTokenRefresh();
+        }
+      }
+    } catch(e) { /* cross-origin — pas encore redirigé */ }
+    if (tries > 30) { // 30 sec timeout
+      clearInterval(check);
+      document.body.removeChild(iframe);
+      state._refreshing = false;
+    }
+  }, 1000);
+}
+
 // Programmer un refresh automatique 5 min avant expiration
 function scheduleTokenRefresh() {
   const saved = loadSession();
   if (!saved || saved.expired) return;
   const delay = (saved.expiry - Date.now()) - (5 * 60 * 1000);
-  if (delay <= 0) { window.location.href = buildOAuthUrl('none'); return; }
-  setTimeout(() => {
-    sessionStorage.setItem('gcal_refresh_tried', '1');
-    window.location.href = buildOAuthUrl('none');
-  }, delay);
+  const effectiveDelay = Math.max(delay, 30000); // minimum 30 secondes
+  setTimeout(() => silentRefreshInBackground(), effectiveDelay);
 }
 
 // ═══════════════════════════════════════════
@@ -1629,19 +1706,41 @@ async function fetchAllEvents() {
   const timeMin = new Date(y, m, 1).toISOString();
   const timeMax = new Date(y, m + 1, 0, 23, 59, 59).toISOString();
 
+  // Travailler sur une copie temporaire
+  // Les événements actuels restent visibles pendant le fetch
+  const tempEvents = {};
   Object.keys(state.events).forEach(k => {
-    state.events[k] = state.events[k].filter(e => e.source === 'local');
+    const local = state.events[k].filter(e => e.source === 'local');
+    if (local.length) tempEvents[k] = local;
   });
 
-  await Promise.allSettled(
-    [...state.selectedCalIds].map(calId => fetchOneCalendar(calId, timeMin, timeMax))
+  const results = await Promise.allSettled(
+    [...state.selectedCalIds].map(calId => fetchOneCalendar(calId, timeMin, timeMax, tempEvents))
   );
+
+  // Vérifier si au moins un fetch a réussi
+  const anySuccess = results.some(r => r.status === 'fulfilled' && r.value === true);
+  const got401     = results.some(r => r.status === 'fulfilled' && r.value === 401);
+
+  if (got401) {
+    // Token expiré — refresh silencieux sans vider le calendrier
+    setSyncing(false);
+    silentRefreshInBackground();
+    return;
+  }
+
+  if (anySuccess || state.selectedCalIds.size === 0) {
+    // Succès — remplacer les événements par la nouvelle version
+    state.events = tempEvents;
+    saveEventsCache();
+  }
+  // Si tout a échoué (réseau) → garder les événements actuels en mémoire
 
   setSyncing(false);
   updateSyncLabel();
 }
 
-async function fetchOneCalendar(calId, timeMin, timeMax) {
+async function fetchOneCalendar(calId, timeMin, timeMax, target) {
   try {
     const params = new URLSearchParams({
       timeMin, timeMax, singleEvents: 'true', orderBy: 'startTime', maxResults: '250',
@@ -1650,28 +1749,28 @@ async function fetchOneCalendar(calId, timeMin, timeMax) {
       `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?${params}`,
       { headers: { Authorization: `Bearer ${state.accessToken}` } }
     );
-    if (!resp.ok) return;
+    if (resp.status === 401) return 401;  // token expiré
+    if (!resp.ok) return false;
     const data  = await resp.json();
     const cal   = state.calendars.find(c => c.id === calId);
     const color = cal?.backgroundColor || '#6b7f5e';
     (data.items || []).forEach(ev => {
-      const dateKey = (ev.start.dateTime || ev.start.date).substring(0, 10);
-      if (!state.events[dateKey]) state.events[dateKey] = [];
-      const rawDesc  = ev.description || '';
-      const evEmoji  = extractEmojiFromDesc(rawDesc) || '📅';
+      const dateKey   = (ev.start.dateTime || ev.start.date).substring(0, 10);
+      if (!target[dateKey]) target[dateKey] = [];
+      const rawDesc   = ev.description || '';
+      const evEmoji   = extractEmojiFromDesc(rawDesc) || '📅';
       const cleanDesc = stripEmojiTag(rawDesc);
-      state.events[dateKey].push({
+      target[dateKey].push({
         id: ev.id, title: ev.summary || '(sans titre)',
-        desc: cleanDesc,          // description sans le tag émoji
-        start: ev.start.dateTime || ev.start.date,
-        end:   ev.end?.dateTime  || ev.end?.date || '',
-        emoji: evEmoji,           // émoji extrait de la description
-        color: 2,
+        desc: cleanDesc, start: ev.start.dateTime || ev.start.date,
+        end:  ev.end?.dateTime || ev.end?.date || '',
+        emoji: evEmoji, color: 2,
         calId, calName: cal?.summary || '', calColor: color,
         source: 'google',
       });
     });
-  } catch(e) { console.error(`fetchOneCalendar(${calId})`, e); }
+    return true;
+  } catch(e) { console.error(`fetchOneCalendar(${calId})`, e); return false; }
 }
 
 // Alias pour compatibilité changeMonth
