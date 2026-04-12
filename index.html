@@ -672,176 +672,170 @@
     .spotify-popup {
       position: fixed; top: 50%; left: 50%;
       transform: translate(-50%, -48%) scale(.96);
-      width: min(500px, 96vw);
+      width: min(820px, 97vw);
       background: #121212; border-radius: 20px;
       box-shadow: 0 24px 60px rgba(0,0,0,.7);
       border: 1px solid rgba(255,255,255,.08);
       z-index: 351; overflow: hidden;
       opacity: 0; pointer-events: none;
       transition: opacity .28s, transform .28s cubic-bezier(.34,1.1,.64,1);
-      max-height: 92vh; overflow-y: auto;
     }
     .spotify-popup.open { opacity: 1; pointer-events: all; transform: translate(-50%, -50%) scale(1); }
 
-    /* Header Spotify */
+    /* Header */
     .sp-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 20px 12px;
+      display: flex; align-items: center; gap: 8px;
+      padding: 12px 16px 10px;
       border-bottom: 1px solid rgba(255,255,255,.08);
     }
-    .sp-title {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 0.9rem; font-weight: 600; color: #fff;
-    }
-    .sp-title-icon { color: #1ed760; font-size: 1.1rem; }
-    .sp-close {
-      width: 30px; height: 30px; border-radius: 50%;
-      background: rgba(255,255,255,.08); border: none;
-      color: rgba(255,255,255,.5); cursor: pointer; font-size: 0.9rem;
-      display: flex; align-items: center; justify-content: center;
+    .sp-title { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; font-weight: 600; color: #fff; }
+    .sp-title-icon { color: #1ed760; font-size: 1rem; }
+    .sp-status { font-size: 0.7rem; color: rgba(255,255,255,.3); margin-left: 6px; }
+    .sp-header-right { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+    /* Bouton appareil */
+    .sp-btn-device {
+      background: none; border: 1px solid rgba(255,255,255,.15); cursor: pointer;
+      color: rgba(255,255,255,.45); border-radius: 20px; padding: 4px 10px;
+      font-size: 0.72rem; display: flex; align-items: center; gap: 5px;
       transition: all .18s;
     }
-    .sp-close:hover { background: rgba(255,255,255,.15); color: #fff; }
-    .sp-status {
-      font-size: 0.72rem; color: rgba(255,255,255,.35);
-      margin-left: auto; margin-right: 10px;
+    .sp-btn-device:hover { border-color: #1ed760; color: #1ed760; }
+    .sp-btn-device.connected { color: #1ed760; border-color: rgba(30,215,96,.4); }
+    .sp-close {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: rgba(255,255,255,.08); border: none;
+      color: rgba(255,255,255,.5); cursor: pointer; font-size: 0.85rem;
+      display: flex; align-items: center; justify-content: center; transition: all .18s;
     }
+    .sp-close:hover { background: rgba(255,255,255,.18); color: #fff; }
 
     /* Zone connexion */
-    .sp-login {
-      padding: 32px 24px; text-align: center;
-    }
+    .sp-login { padding: 40px 24px; text-align: center; }
     .sp-login-icon { font-size: 3rem; margin-bottom: 12px; }
-    .sp-login-text { font-size: 0.9rem; color: rgba(255,255,255,.6); margin-bottom: 20px; }
+    .sp-login-text { font-size: 0.88rem; color: rgba(255,255,255,.6); margin-bottom: 20px; }
     .sp-btn-login {
       display: inline-flex; align-items: center; gap: 10px;
       padding: 12px 28px; border-radius: 50px;
-      background: #1ed760; color: #000;
-      border: none; cursor: pointer;
+      background: #1ed760; color: #000; border: none; cursor: pointer;
       font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 700;
       transition: all .2s;
     }
     .sp-btn-login:hover { background: #1fdf64; transform: scale(1.03); }
 
-    /* Morceau en cours */
-    .sp-now-playing {
-      padding: 20px 20px 10px;
-      display: flex; gap: 16px; align-items: center;
+    /* Layout 2 colonnes */
+    .sp-body-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 0;
     }
+    .sp-col-left {
+      padding: 14px 16px;
+      border-right: 1px solid rgba(255,255,255,.07);
+    }
+    .sp-col-right {
+      display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Morceau en cours */
+    .sp-now-playing { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
     .sp-cover {
-      width: 80px; height: 80px; border-radius: 10px;
+      width: 68px; height: 68px; border-radius: 8px;
       background: #282828; flex-shrink: 0; overflow: hidden;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 2rem;
+      display: flex; align-items: center; justify-content: center; font-size: 1.8rem;
     }
     .sp-cover img { width: 100%; height: 100%; object-fit: cover; }
     .sp-track-info { flex: 1; min-width: 0; }
-    .sp-track-name {
-      font-size: 1rem; font-weight: 700; color: #fff;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .sp-track-artist { font-size: 0.82rem; color: rgba(255,255,255,.55); margin-top: 3px; }
-    .sp-track-album  { font-size: 0.75rem; color: rgba(255,255,255,.35); margin-top: 2px; }
-    .sp-heart {
-      background: none; border: none; cursor: pointer;
-      font-size: 1.2rem; color: rgba(255,255,255,.3);
-      transition: all .18s; flex-shrink: 0;
-      padding: 6px;
-    }
-    .sp-heart.liked { color: #1ed760; }
-    .sp-heart:hover { transform: scale(1.2); }
+    .sp-track-name { font-size: 0.95rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sp-track-artist { font-size: 0.78rem; color: rgba(255,255,255,.55); margin-top: 2px; }
+    .sp-track-album  { font-size: 0.7rem; color: rgba(255,255,255,.3); margin-top: 1px; }
 
-    /* Barre de progression */
-    .sp-progress {
-      padding: 4px 20px 8px;
-    }
+    /* Progression */
+    .sp-progress { margin-bottom: 8px; }
     .sp-progress-bar {
-      width: 100%; height: 4px; background: rgba(255,255,255,.15);
-      border-radius: 2px; cursor: pointer; position: relative;
-      margin-bottom: 4px;
+      width: 100%; height: 5px; background: rgba(255,255,255,.15);
+      border-radius: 3px; cursor: pointer; position: relative; margin-bottom: 4px;
     }
-    .sp-progress-fill {
-      height: 100%; background: #1ed760; border-radius: 2px;
-      transition: width .5s linear; position: relative;
-    }
+    .sp-progress-fill { height: 100%; background: #1ed760; border-radius: 3px; transition: width .5s linear; position: relative; }
     .sp-progress-fill::after {
-      content: ''; position: absolute; right: -5px; top: 50%;
-      transform: translateY(-50%);
-      width: 10px; height: 10px; border-radius: 50%; background: #fff;
-      opacity: 0; transition: opacity .15s;
+      content: ''; position: absolute; right: -5px; top: 50%; transform: translateY(-50%);
+      width: 11px; height: 11px; border-radius: 50%; background: #fff; opacity: 0; transition: opacity .15s;
     }
     .sp-progress-bar:hover .sp-progress-fill::after { opacity: 1; }
-    .sp-times {
-      display: flex; justify-content: space-between;
-      font-size: 0.68rem; color: rgba(255,255,255,.35);
-    }
+    .sp-times { display: flex; justify-content: space-between; font-size: 0.65rem; color: rgba(255,255,255,.3); }
 
     /* Contrôles */
-    .sp-controls {
-      display: flex; align-items: center; justify-content: center;
-      gap: 8px; padding: 8px 20px 16px;
-    }
+    .sp-controls { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 10px; }
     .sp-ctrl {
       background: none; border: none; cursor: pointer;
       color: rgba(255,255,255,.6); transition: all .18s;
       display: flex; align-items: center; justify-content: center;
-      border-radius: 50%; padding: 8px;
+      border-radius: 50%; padding: 7px;
     }
-    .sp-ctrl:hover { color: #fff; transform: scale(1.1); }
+    .sp-ctrl:hover { color: #fff; transform: scale(1.12); }
     .sp-ctrl.active { color: #1ed760; }
-    .sp-ctrl svg { width: 18px; height: 18px; }
+    .sp-ctrl svg { width: 16px; height: 16px; }
     .sp-ctrl-play {
-      width: 52px; height: 52px; border-radius: 50%;
+      width: 46px; height: 46px; border-radius: 50%;
       background: #fff; border: none; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: all .18s; padding: 0;
     }
-    .sp-ctrl-play:hover { transform: scale(1.06); background: #f0f0f0; }
-    .sp-ctrl-play svg { width: 22px; height: 22px; fill: #000; }
+    .sp-ctrl-play:hover { transform: scale(1.07); background: #f0f0f0; }
+    .sp-ctrl-play svg { width: 20px; height: 20px; fill: #000; }
 
-    /* Volume */
-    .sp-volume {
-      display: flex; align-items: center; gap: 8px;
-      padding: 0 20px 14px;
+    /* Volume — input range natif pour fiabilité */
+    .sp-volume { display: flex; align-items: center; gap: 8px; }
+    .sp-vol-icon { font-size: 0.85rem; color: rgba(255,255,255,.35); flex-shrink: 0; }
+    .sp-vol-slider {
+      flex: 1; -webkit-appearance: none; appearance: none;
+      height: 4px; border-radius: 2px; outline: none; cursor: pointer;
+      background: linear-gradient(to right, rgba(255,255,255,.6) 0%, rgba(255,255,255,.6) 50%, rgba(255,255,255,.15) 50%);
     }
-    .sp-vol-icon { font-size: 0.9rem; color: rgba(255,255,255,.4); }
-    .sp-vol-bar {
-      flex: 1; height: 4px; background: rgba(255,255,255,.15);
-      border-radius: 2px; cursor: pointer;
+    .sp-vol-slider::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 14px; height: 14px;
+      border-radius: 50%; background: #fff; cursor: pointer;
     }
-    .sp-vol-fill { height: 100%; background: rgba(255,255,255,.5); border-radius: 2px; }
 
-    /* Playlists */
-    .sp-playlists {
-      border-top: 1px solid rgba(255,255,255,.08);
-      padding: 12px 0 0;
-    }
+    /* Playlists — colonne droite */
+    .sp-playlists { display: flex; flex-direction: column; height: 100%; }
     .sp-section-title {
-      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .1em; color: rgba(255,255,255,.35);
-      padding: 0 20px 8px;
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .1em; color: rgba(255,255,255,.3);
+      padding: 10px 14px 6px; flex-shrink: 0;
+      border-bottom: 1px solid rgba(255,255,255,.06);
     }
+    .sp-playlist-scroll { overflow-y: auto; flex: 1; max-height: 260px; }
+    .sp-playlist-scroll::-webkit-scrollbar { width: 3px; }
+    .sp-playlist-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 3px; }
     .sp-playlist-item {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 20px; cursor: pointer;
-      transition: background .15s;
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 14px; cursor: pointer; transition: background .15s;
     }
     .sp-playlist-item:hover { background: rgba(255,255,255,.06); }
     .sp-playlist-item.active { background: rgba(30,215,96,.08); }
     .sp-pl-img {
-      width: 42px; height: 42px; border-radius: 6px;
+      width: 36px; height: 36px; border-radius: 5px;
       background: #282828; flex-shrink: 0; overflow: hidden;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.1rem;
+      display: flex; align-items: center; justify-content: center; font-size: 0.95rem;
     }
     .sp-pl-img img { width: 100%; height: 100%; object-fit: cover; }
-    .sp-pl-name { font-size: 0.88rem; color: #fff; font-weight: 500; }
-    .sp-pl-count { font-size: 0.72rem; color: rgba(255,255,255,.35); margin-top: 1px; }
-    .sp-pl-playing { color: #1ed760; font-size: 0.75rem; margin-left: auto; }
-    .sp-nothing {
-      padding: 20px; text-align: center;
-      font-size: 0.85rem; color: rgba(255,255,255,.3);
+    .sp-pl-name { font-size: 0.82rem; color: #fff; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sp-pl-count { font-size: 0.68rem; color: rgba(255,255,255,.3); margin-top: 1px; }
+    .sp-pl-playing { color: #1ed760; font-size: 0.7rem; margin-left: auto; flex-shrink: 0; }
+    .sp-nothing { padding: 20px; text-align: center; font-size: 0.82rem; color: rgba(255,255,255,.25); }
+
+    /* Panneau appareils */
+    .sp-devices { padding: 0; }
+    .sp-device-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; cursor: pointer; transition: background .15s;
     }
+    .sp-device-item:hover { background: rgba(255,255,255,.06); }
+    .sp-device-item.active { background: rgba(30,215,96,.08); }
+    .sp-device-icon { font-size: 1.2rem; flex-shrink: 0; }
+    .sp-device-name { font-size: 0.85rem; color: #fff; }
+    .sp-device-type { font-size: 0.7rem; color: rgba(255,255,255,.35); margin-top: 1px; }
+    .sp-device-active { color: #1ed760; font-size: 0.7rem; margin-left: auto; flex-shrink: 0; }
 
     /* ══════════════════════════════════════
        ÉCRAN DE VEILLE (Mode inactif)
@@ -1235,7 +1229,12 @@
     <div class="sp-header">
       <div class="sp-title"><span class="sp-title-icon">🎵</span> Spotify</div>
       <span class="sp-status" id="sp-status"></span>
-      <button class="sp-close" onclick="closeSpotifyPopup()">✕</button>
+      <div class="sp-header-right">
+        <button class="sp-btn-device" id="sp-btn-device" onclick="toggleSpoticeDevices()" title="Sélectionner un appareil">
+          📡 <span id="sp-device-name-btn">Appareil</span>
+        </button>
+        <button class="sp-close" onclick="closeSpotifyPopup()">✕</button>
+      </div>
     </div>
     <div id="sp-body">
       <!-- Contenu dynamique -->
@@ -1496,8 +1495,8 @@
 // ═══════════════════════════════════════════
 const GOOGLE_CONFIG = {
   clientId:     '647348410681-90bses902v8ln2766frod7lt29jske7u.apps.googleusercontent.com',
-  apiKey:       'AIzaSyBSbgEvnuLAiIg71kk4K2k-RltRPorYLMs',
-  scopes:       'https://www.googleapis.com/auth/calendar',
+  apiKey:       'VOTRE_API_KEY',
+  scopes:       'AIzaSyBSbgEvnuLAiIg71kk4K2k-RltRPorYLMs',
   discoveryDoc: 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
 };
 
@@ -3119,11 +3118,20 @@ async function fetchSpotifyPlaylists() {
 function renderSpotifyBody() {
   const body = document.getElementById('sp-body');
   if (!body) return;
-  if (!spState.token) {
-    body.innerHTML = spLoginHTML();
+  if (!spState.token) { body.innerHTML = spLoginHTML(); return; }
+
+  if (spState.showDevices) {
+    body.innerHTML = spDevicesHTML();
+    fetchSpotifyDevices().then(renderSpotifyBody);
+    spState.showDevices = false;
     return;
   }
-  body.innerHTML = spPlayerHTML() + spPlaylistsHTML();
+
+  body.innerHTML =
+    '<div class="sp-body-grid">'
+    + '<div class="sp-col-left">' + spPlayerHTML() + '</div>'
+    + '<div class="sp-col-right">' + spPlaylistsHTML() + '</div>'
+    + '</div>';
   attachSpotifyEvents();
 }
 
@@ -3175,13 +3183,14 @@ function spPlayerHTML() {
   const coverUrl  = track && track.album.images[0] ? track.album.images[0].url : '';
   const pct = (track && track.duration_ms > 0) ? (c.progress_ms / track.duration_ms * 100) : 0;
 
+  const vol = (c && c.device) ? c.device.volume_percent : 50;
   return '<div class="sp-now-playing">'
     + '<div class="sp-cover">'
     + (coverUrl ? '<img id="sp-cover-img" src="' + coverUrl + '" alt="cover"/>' : '<span id="sp-cover-img">🎵</span>')
     + '</div>'
     + '<div class="sp-track-info">'
     + '<div class="sp-track-name" id="sp-track-name">' + (track ? track.name : 'Aucune lecture') + '</div>'
-    + '<div class="sp-track-artist" id="sp-track-artist">' + (track ? track.artists.map(a => a.name).join(', ') : '') + '</div>'
+    + '<div class="sp-track-artist" id="sp-track-artist">' + (track ? track.artists.map(a => a.name).join(', ') : '—') + '</div>'
     + '<div class="sp-track-album" id="sp-track-album">' + (track ? track.album.name : '') + '</div>'
     + '</div>'
     + '</div>'
@@ -3192,37 +3201,93 @@ function spPlayerHTML() {
     + '<div class="sp-times"><span id="sp-pos">' + msToTime(c ? c.progress_ms : 0) + '</span><span id="sp-dur">' + msToTime(track ? track.duration_ms : 0) + '</span></div>'
     + '</div>'
     + '<div class="sp-controls">'
-    + '<button class="sp-ctrl" id="sp-shuffle" onclick="spToggleShuffle()" title="Aléatoire"' + (c && c.shuffle_state ? ' style="color:#1ed760"' : '') + '>' + svgShuffle() + '</button>'
+    + '<button class="sp-ctrl' + (c && c.shuffle_state ? ' active' : '') + '" id="sp-shuffle" onclick="spToggleShuffle()" title="Aléatoire">' + svgShuffle() + '</button>'
     + '<button class="sp-ctrl" onclick="spPrev()" title="Précédent">' + svgPrev() + '</button>'
     + '<button class="sp-ctrl-play" id="sp-play-btn" onclick="spPlayPause()">' + (isPlaying ? svgPause() : svgPlay()) + '</button>'
     + '<button class="sp-ctrl" onclick="spNext()" title="Suivant">' + svgNext() + '</button>'
-    + '<button class="sp-ctrl" id="sp-repeat" onclick="spToggleRepeat()" title="Répéter"' + (c && c.repeat_state !== 'off' ? ' style="color:#1ed760"' : '') + '>' + svgRepeat() + '</button>'
+    + '<button class="sp-ctrl' + (c && c.repeat_state !== 'off' ? ' active' : '') + '" id="sp-repeat" onclick="spToggleRepeat()" title="Répéter">' + svgRepeat() + '</button>'
     + '</div>'
     + '<div class="sp-volume">'
     + '<span class="sp-vol-icon">🔈</span>'
-    + '<div class="sp-vol-bar" onclick="spSetVolume(event)"><div class="sp-vol-fill" id="sp-vol-fill" style="width:' + (c && c.device ? c.device.volume_percent : 50) + '%"></div></div>'
+    + '<input type="range" class="sp-vol-slider" id="sp-vol-slider" min="0" max="100" value="' + vol + '" oninput="spSetVolume(this.value)">'
     + '<span class="sp-vol-icon">🔊</span>'
     + '</div>';
 }
 
 function spPlaylistsHTML() {
-  if (!spState.playlists.length) return '<div class="sp-nothing">Aucune playlist trouvée</div>';
   const currentCtx = spState.current && spState.current.context ? spState.current.context.uri : '';
-  let html = '<div class="sp-playlists"><div class="sp-section-title">Mes playlists</div>';
-  spState.playlists.forEach(pl => {
-    const img     = pl.images && pl.images[0] ? '<img src="' + pl.images[0].url + '" alt=""/>' : '🎵';
-    const isActive = pl.uri === currentCtx;
-    html += '<div class="sp-playlist-item' + (isActive ? ' active' : '') + '" onclick="spPlayPlaylist(\'' + pl.uri + '\')">'
-      + '<div class="sp-pl-img">' + img + '</div>'
-      + '<div><div class="sp-pl-name">' + pl.name + '</div><div class="sp-pl-count">' + pl.tracks.total + ' titres</div></div>'
-      + (isActive ? '<span class="sp-pl-playing">▶</span>' : '')
+  let html = '<div class="sp-playlists"><div class="sp-section-title">Listes de lecture</div><div class="sp-playlist-scroll">';
+  if (!spState.playlists.length) {
+    html += '<div class="sp-nothing">Aucune playlist</div>';
+  } else {
+    spState.playlists.forEach(pl => {
+      const img     = pl.images && pl.images[0] ? '<img src="' + pl.images[0].url + '" alt=""/>' : '🎵';
+      const isActive = pl.uri === currentCtx;
+      html += '<div class="sp-playlist-item' + (isActive ? ' active' : '') + '" onclick="spPlayPlaylist(\'' + pl.uri + '\')">'
+        + '<div class="sp-pl-img">' + img + '</div>'
+        + '<div style="min-width:0;flex:1"><div class="sp-pl-name">' + pl.name + '</div><div class="sp-pl-count">' + pl.tracks.total + ' titres</div></div>'
+        + (isActive ? '<span class="sp-pl-playing">▶</span>' : '')
+        + '</div>';
+    });
+  }
+  html += '</div></div>';
+  return html;
+}
+
+// ── Appareils disponibles ──
+async function fetchSpotifyDevices() {
+  const data = await spFetch('/me/player/devices');
+  spState.devices = data ? data.devices || [] : [];
+}
+
+function spDevicesHTML() {
+  if (!spState.devices || !spState.devices.length) {
+    return '<div class="sp-nothing" style="padding:30px">Aucun appareil actif trouvé.<br/>Lancez Spotify sur un appareil.</div>';
+  }
+  const icons = { computer: '💻', smartphone: '📱', speaker: '🔊', tv: '📺', 'Cast Video': '📺', 'Cast Audio': '🔊' };
+  let html = '<div class="sp-devices">';
+  spState.devices.forEach(dev => {
+    const icon = icons[dev.type] || '🎵';
+    html += '<div class="sp-device-item' + (dev.is_active ? ' active' : '') + '" onclick="spSelectDevice(\'' + dev.id + '\')">'
+      + '<span class="sp-device-icon">' + icon + '</span>'
+      + '<div><div class="sp-device-name">' + dev.name + '</div><div class="sp-device-type">' + dev.type + (dev.volume_percent !== null ? ' · ' + dev.volume_percent + '%' : '') + '</div></div>'
+      + (dev.is_active ? '<span class="sp-device-active">✓ Actif</span>' : '')
       + '</div>';
   });
   html += '</div>';
   return html;
 }
 
-function attachSpotifyEvents() {}
+async function toggleSpoticeDevices() {
+  await fetchSpotifyDevices();
+  const body = document.getElementById('sp-body');
+  if (!body) return;
+  body.innerHTML = '<div class="sp-section-title" style="padding:12px 16px 8px">📡 Appareils disponibles</div>' + spDevicesHTML()
+    + '<div style="padding:10px 16px;border-top:1px solid rgba(255,255,255,.07)">'
+    + '<button onclick="renderSpotifyBody()" style="background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:0.8rem">← Retour</button></div>';
+}
+
+async function spSelectDevice(deviceId) {
+  await spFetch('/me/player', 'PUT', { device_ids: [deviceId], play: false });
+  // Mettre à jour le bouton appareil
+  const dev = (spState.devices || []).find(d => d.id === deviceId);
+  if (dev) {
+    const btn = document.getElementById('sp-device-name-btn');
+    if (btn) btn.textContent = dev.name;
+    const btnDev = document.getElementById('sp-btn-device');
+    if (btnDev) btnDev.classList.add('connected');
+  }
+  setTimeout(() => renderSpotifyBody(), 500);
+}
+
+function attachSpotifyEvents() {
+  // Initialiser le dégradé du slider volume
+  const slider = document.getElementById('sp-vol-slider');
+  if (slider) {
+    const vol = parseInt(slider.value) || 50;
+    slider.style.background = 'linear-gradient(to right, rgba(255,255,255,.6) 0%, rgba(255,255,255,.6) ' + vol + '%, rgba(255,255,255,.15) ' + vol + '%)';
+  }
+}
 
 // ── Contrôles ──
 async function spPlayPause() {
@@ -3258,11 +3323,12 @@ async function spSeek(event) {
   const pos = Math.round(pct * spState.current.item.duration_ms);
   await spFetch('/me/player/seek?position_ms=' + pos, 'PUT');
 }
-async function spSetVolume(event) {
-  const bar = event.currentTarget;
-  const vol = Math.round(event.offsetX / bar.offsetWidth * 100);
-  const fillEl = document.getElementById('sp-vol-fill');
-  if (fillEl) fillEl.style.width = vol + '%';
+async function spSetVolume(value) {
+  const vol = Math.round(parseInt(value));
+  // Mettre à jour le style dégradé du slider
+  const slider = document.getElementById('sp-vol-slider');
+  if (slider) slider.style.background =
+    'linear-gradient(to right, rgba(255,255,255,.6) 0%, rgba(255,255,255,.6) ' + vol + '%, rgba(255,255,255,.15) ' + vol + '%)';
   await spFetch('/me/player/volume?volume_percent=' + vol, 'PUT');
 }
 async function spPlayPlaylist(uri) {
