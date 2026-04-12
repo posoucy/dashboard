@@ -3265,44 +3265,22 @@ async function fetchSpotifyDevices() {
   spState.devices = data ? data.devices || [] : [];
 }
 
-function spDevicesHTML() {
-  if (!spState.devices || !spState.devices.length) {
-    return '<div class="sp-nothing" style="padding:30px">Aucun appareil actif trouvé.<br/>Lancez Spotify sur un appareil.</div>';
-  }
-  const icons = { computer: '💻', smartphone: '📱', speaker: '🔊', tv: '📺', 'Cast Video': '📺', 'Cast Audio': '🔊' };
-  let html = '<div class="sp-devices">';
-  spState.devices.forEach(dev => {
-    const icon = icons[dev.type] || '🎵';
-    html += '<div class="sp-device-item' + (dev.is_active ? ' active' : '') + '" onclick="spSelectDevice(\'' + dev.id + '\')">'
-      + '<span class="sp-device-icon">' + icon + '</span>'
-      + '<div><div class="sp-device-name">' + dev.name + '</div><div class="sp-device-type">' + dev.type + (dev.volume_percent !== null ? ' · ' + dev.volume_percent + '%' : '') + '</div></div>'
-      + (dev.is_active ? '<span class="sp-device-active">✓ Actif</span>' : '')
-      + '</div>';
-  });
-  html += '</div>';
-  return html;
-}
 
-async function toggleSpoticeDevices() {
-  await fetchSpotifyDevices();
-  const body = document.getElementById('sp-body');
-  if (!body) return;
-  body.innerHTML = '<div class="sp-section-title" style="padding:12px 16px 8px">📡 Appareils disponibles</div>' + spDevicesHTML()
-    + '<div style="padding:10px 16px;border-top:1px solid rgba(255,255,255,.07)">'
-    + '<button onclick="renderSpotifyBody()" style="background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:0.8rem">← Retour</button></div>';
-}
+
+
+async function toggleSpoticeDevices() { spShowDevices(); }
 
 async function spSelectDevice(deviceId) {
   await spFetch('/me/player', 'PUT', { device_ids: [deviceId], play: false });
-  // Mettre à jour le bouton appareil
   const dev = (spState.devices || []).find(d => d.id === deviceId);
   if (dev) {
     const btn = document.getElementById('sp-device-name-btn');
     if (btn) btn.textContent = dev.name;
     const btnDev = document.getElementById('sp-btn-device');
     if (btnDev) btnDev.classList.add('connected');
+    spState.devices.forEach(d => d.is_active = d.id === deviceId);
   }
-  setTimeout(() => renderSpotifyBody(), 500);
+  setTimeout(() => spShowPlayer(), 600);
 }
 
 function attachSpotifyEvents() {
