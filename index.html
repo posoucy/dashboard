@@ -931,6 +931,40 @@
     }
     @keyframes ss-pulse { 0%,100%{opacity:.2} 50%{opacity:.5} }
 
+    /* Bloc Spotify sur l'écran de veille */
+    #ss-spotify {
+      position: absolute; bottom: 44px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 3;
+      display: none; /* masqué si rien ne joue */
+      align-items: center; gap: 16px;
+      background: rgba(0,0,0,.45);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 16px;
+      padding: 12px 20px;
+      min-width: 280px; max-width: min(500px, 85vw);
+    }
+    #ss-spotify.visible { display: flex; }
+    #ss-sp-cover {
+      width: 56px; height: 56px; border-radius: 8px;
+      background: #282828; flex-shrink: 0; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem;
+    }
+    #ss-sp-cover img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+    #ss-sp-info { flex: 1; min-width: 0; }
+    #ss-sp-title  {
+      font-size: min(3.5vw, 1rem); font-weight: 700; color: #fff;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    #ss-sp-artist {
+      font-size: min(2.8vw, 0.82rem); color: rgba(255,255,255,.6);
+      margin-top: 3px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    #ss-sp-icon { font-size: 0.9rem; color: #1ed760; flex-shrink: 0; }
+
     /* ── Popup météo détaillée ── */
     .weather-popup-overlay {
       position: fixed; inset: 0; z-index: 350;
@@ -1301,6 +1335,14 @@
           <div id="ss-weather-desc">—</div>
         </div>
       </div>
+    </div>
+    <div id="ss-spotify">
+      <div id="ss-sp-cover"><span>🎵</span></div>
+      <div id="ss-sp-info">
+        <div id="ss-sp-title">—</div>
+        <div id="ss-sp-artist">—</div>
+      </div>
+      <span id="ss-sp-icon">🎵</span>
     </div>
     <div id="ss-hint">Toucher pour réveiller</div>
   </div>
@@ -2815,7 +2857,10 @@ async function loadWeather() {
     fcEl.style.display = 'flex';
 
     // Mettre à jour l'écran de veille si actif
-    if (ssState.active) updateScreensaverWeather();
+    if (ssState.active) {
+      updateScreensaverWeather();
+      updateScreensaverSpotify();
+    }
 
   } catch(e) {
     nowEl.innerHTML = '<div class="weather-loading">Météo indisponible —<br/>Activez la localisation.</div>';
@@ -3632,16 +3677,18 @@ function activateScreensaver() {
   const ss = document.getElementById('screensaver');
   ss.classList.add('active');
 
-  // Mettre à jour heure/date/météo
+  // Mettre à jour heure/date/météo/spotify
   updateScreensaverClock();
   updateScreensaverWeather();
+  updateScreensaverSpotify();
 
   // Charger la première photo + gradient
   updateScreensaverPhoto();
 
-  // Ticker : heure à la seconde + barre de progression
+  // Ticker : heure à la seconde
   ssState.tickTimer = setInterval(() => {
     updateScreensaverClock();
+    updateScreensaverSpotify(); // Spotify mis à jour chaque seconde
   }, 1000);
 
   // Photo toutes les minutes
@@ -3682,6 +3729,38 @@ function updateScreensaverClock() {
                   'juillet','août','septembre','octobre','novembre','décembre'];
   document.getElementById('ss-date').textContent =
     jours[now.getDay()] + ' ' + now.getDate() + ' ' + mois[now.getMonth()] + ' ' + now.getFullYear();
+}
+
+// ── Spotify sur l'écran de veille ──
+function updateScreensaverSpotify() {
+  const el = document.getElementById('ss-spotify');
+  if (!el) return;
+  const c     = spState && spState.current;
+  const track = c && c.item ? c.item : null;
+
+  if (!track || !c.is_playing) {
+    el.classList.remove('visible');
+    return;
+  }
+
+  // Titre + artiste
+  document.getElementById('ss-sp-title').textContent =
+    track.name || '—';
+  document.getElementById('ss-sp-artist').textContent =
+    (track.artists || []).map(a => a.name).join(', ')
+    + (track.album && track.album.name ? ' · ' + track.album.name : '');
+
+  // Pochette
+  const coverEl = document.getElementById('ss-sp-cover');
+  const imgUrl  = track.album && track.album.images && track.album.images[0]
+                  ? track.album.images[0].url : '';
+  if (imgUrl) {
+    coverEl.innerHTML = '<img src="' + imgUrl + '" alt="cover"/>';
+  } else {
+    coverEl.innerHTML = '<span>🎵</span>';
+  }
+
+  el.classList.add('visible');
 }
 
 // ── Météo dans l'écran de veille (dernière connue) ──
