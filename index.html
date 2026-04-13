@@ -151,7 +151,7 @@
     /* Bouton déconnexion — très discret, icône seule */
     .btn-auth-disconnect {
       display: none;
-      width: 30px; height: 30px; border-radius: 50%;
+      width: 36px; height: 36px; border-radius: 50%;
       background: rgba(255,253,247,.08);
       border: 1px solid rgba(255,253,247,.15);
       color: rgba(255,253,247,.45);
@@ -163,10 +163,9 @@
     .btn-auth-disconnect:hover {
       background: rgba(192,57,43,.3);
       border-color: rgba(192,57,43,.5);
-      color: #f0a;
       color: #ff8a80;
     }
-    .btn-auth-disconnect svg { width: 14px; height: 14px; }
+    .btn-auth-disconnect svg { width: 17px; height: 17px; }
 
     /* Bouton connexion principal (plein) */
     .btn-auth {
@@ -650,14 +649,21 @@
        SPOTIFY
     ══════════════════════════════════════ */
     .btn-spotify {
-      width: 28px; height: 28px; border-radius: 50%;
+      width: 36px; height: 36px; border-radius: 50%;
       background: rgba(255,253,247,.08); border: 1px solid rgba(255,253,247,.15);
       color: rgba(255,253,247,.5); cursor: pointer; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.95rem; transition: all .2s;
+      font-size: 1.15rem; transition: all .2s;
     }
     .btn-spotify:hover { background: rgba(30,215,96,.25); color: #1ed760; border-color: rgba(30,215,96,.4); }
-    .btn-spotify.playing { color: #1ed760; border-color: rgba(30,215,96,.4); background: rgba(30,215,96,.15); }
+    .btn-spotify.playing {
+      color: #1ed760; border-color: rgba(30,215,96,.4); background: rgba(30,215,96,.15);
+      animation: music-bounce .6s ease-in-out infinite alternate;
+    }
+    @keyframes music-bounce {
+      0%   { transform: scale(1)    rotate(-8deg); }
+      100% { transform: scale(1.15) rotate(8deg);  }
+    }
 
     /* Overlay + Popup */
     .spotify-overlay {
@@ -1053,13 +1059,13 @@
 
     /* ── Bouton paramètres météo ── */
     .btn-weather-settings {
-      width: 26px; height: 26px; border-radius: 50%;
+      width: 36px; height: 36px; border-radius: 50%;
       background: rgba(255,253,247,.08);
       border: 1px solid rgba(255,253,247,.15);
       color: rgba(255,253,247,.4);
       cursor: pointer; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.85rem; transition: all .2s;
+      font-size: 1.1rem; transition: all .2s;
     }
     .btn-weather-settings:hover {
       background: rgba(255,253,247,.18);
@@ -1191,8 +1197,8 @@
       .forecast-temp { font-size: 0.8rem; }
       .forecast-min  { font-size: 0.72rem; }
       .forecast-day  { font-size: 0.7rem; }
-      .btn-auth-disconnect { width: 28px; height: 28px; }
-      .btn-auth-disconnect svg { width: 13px; height: 13px; }
+      .btn-auth-disconnect { width: 32px; height: 32px; }
+      .btn-auth-disconnect svg { width: 15px; height: 15px; }
       /* Calendrier pleine hauteur */
       .day-cell { height: calc((100vh - 118px) / 6); min-height: 0; padding: 3px 5px; margin: 1px; }
       .day-num   { font-size: 1.1rem; width: 30px; height: 30px; margin-bottom: 2px; }
@@ -3626,6 +3632,7 @@ let ssState = {
   idleTimer:    null,
   tickTimer:    null,
   photoTimer:   null,
+  spTimer:      null,   // polling Spotify pendant la veille
   queryIdx:     0,
   idleDelay:    30,     // minutes
 };
@@ -3685,11 +3692,19 @@ function activateScreensaver() {
   // Charger la première photo + gradient
   updateScreensaverPhoto();
 
-  // Ticker : heure à la seconde
+  // Ticker : heure à la seconde + Spotify affiché
   ssState.tickTimer = setInterval(() => {
     updateScreensaverClock();
-    updateScreensaverSpotify(); // Spotify mis à jour chaque seconde
+    updateScreensaverSpotify();
   }, 1000);
+
+  // Polling Spotify en arrière-plan toutes les 5 secondes pendant la veille
+  ssState.spTimer = setInterval(async () => {
+    if (spState.token) {
+      await fetchSpotifyNowPlaying();
+      updateScreensaverSpotify();
+    }
+  }, 5000);
 
   // Photo toutes les minutes
   ssState.photoTimer = setInterval(() => {
@@ -3705,6 +3720,7 @@ function wakeUp() {
 
   if (ssState.tickTimer)  { clearInterval(ssState.tickTimer);  ssState.tickTimer  = null; }
   if (ssState.photoTimer) { clearInterval(ssState.photoTimer); ssState.photoTimer = null; }
+  if (ssState.spTimer)    { clearInterval(ssState.spTimer);    ssState.spTimer    = null; }
 
   // Reprendre les requêtes Google
   if (state.isAuthenticated) {
