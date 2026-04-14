@@ -937,6 +937,37 @@
     }
     @keyframes ss-pulse { 0%,100%{opacity:.2} 50%{opacity:.5} }
 
+    /* Bloc événements du jour sur l'écran de veille */
+    #ss-events {
+      position: relative; z-index: 3;
+      background: rgba(0,0,0,.4);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 14px;
+      padding: 10px 18px;
+      min-width: 280px; max-width: min(480px, 82vw);
+      margin-top: min(3vh, 20px);
+    }
+    #ss-events-title {
+      font-size: min(2.2vw, 0.7rem); font-weight: 700;
+      text-transform: uppercase; letter-spacing: .1em;
+      color: rgba(255,255,255,.4); margin-bottom: 8px;
+    }
+    .ss-event-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 4px 0;
+    }
+    .ss-event-item.past { opacity: .4; }
+    .ss-event-emoji { font-size: min(3vw, 0.95rem); flex-shrink: 0; }
+    .ss-event-time  {
+      font-size: min(2.5vw, 0.75rem); color: rgba(255,255,255,.5);
+      flex-shrink: 0; min-width: 36px;
+    }
+    .ss-event-title {
+      font-size: min(2.8vw, 0.85rem); color: #fff; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
     /* Bloc Spotify sur l'écran de veille */
     #ss-spotify {
       position: absolute; bottom: 44px; left: 50%;
@@ -1340,6 +1371,10 @@
           <div id="ss-weather-temp">—°</div>
           <div id="ss-weather-desc">—</div>
         </div>
+      </div>
+      <div id="ss-events" style="display:none">
+        <div id="ss-events-title">Aujourd'hui</div>
+        <div id="ss-events-list"></div>
       </div>
     </div>
     <div id="ss-spotify">
@@ -3684,18 +3719,22 @@ function activateScreensaver() {
   const ss = document.getElementById('screensaver');
   ss.classList.add('active');
 
-  // Mettre à jour heure/date/météo/spotify
+  // Mettre à jour heure/date/météo/événements/spotify
   updateScreensaverClock();
   updateScreensaverWeather();
+  updateScreensaverEvents();
   updateScreensaverSpotify();
 
   // Charger la première photo + gradient
   updateScreensaverPhoto();
 
   // Ticker : heure à la seconde + Spotify affiché
+  let ssTickCount = 0;
   ssState.tickTimer = setInterval(() => {
     updateScreensaverClock();
     updateScreensaverSpotify();
+    ssTickCount++;
+    if (ssTickCount % 60 === 0) updateScreensaverEvents(); // 1x/minute
   }, 1000);
 
   // Polling Spotify en arrière-plan toutes les 5 secondes pendant la veille
@@ -3777,6 +3816,41 @@ function updateScreensaverSpotify() {
   }
 
   el.classList.add('visible');
+}
+
+// ── Événements du jour sur l'écran de veille ──
+function updateScreensaverEvents() {
+  const eventsEl = document.getElementById('ss-events');
+  const listEl   = document.getElementById('ss-events-list');
+  if (!eventsEl || !listEl) return;
+
+  const todayKey = toDateKey(new Date());
+  const todayEvs = (state.events[todayKey] || [])
+    .filter(ev => ev.title)
+    .sort((a, b) => (a.start || '').localeCompare(b.start || ''))
+    .slice(0, 5);
+
+  if (todayEvs.length === 0) {
+    eventsEl.style.display = 'none';
+    return;
+  }
+
+  const now     = new Date();
+  const nowStr  = toDateKey(now) + 'T' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+
+  listEl.innerHTML = todayEvs.map(ev => {
+    const timeStr = ev.start && ev.start.includes('T')
+      ? ev.start.substring(11, 16)
+      : 'Journée';
+    const isPast  = ev.start && ev.start < nowStr;
+    return '<div class="ss-event-item' + (isPast ? ' past' : '') + '">'
+      + '<span class="ss-event-emoji">' + (ev.emoji || '📅') + '</span>'
+      + '<span class="ss-event-time">'  + timeStr + '</span>'
+      + '<span class="ss-event-title">' + ev.title + '</span>'
+      + '</div>';
+  }).join('');
+
+  eventsEl.style.display = 'block';
 }
 
 // ── Météo dans l'écran de veille (dernière connue) ──
