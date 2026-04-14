@@ -2356,6 +2356,11 @@ async function deleteGoogleEvent(eventId, calId) {
 //   CALENDAR RENDER
 // ═══════════════════════════════════════════
 function renderCalendar() {
+  // Si on est en vue semaine, déléguer à renderWeekView
+  if (state.currentView === 'week') {
+    renderWeekView();
+    return;
+  }
   const y = state.currentDate.getFullYear();
   const m = state.currentDate.getMonth();
   document.getElementById('month-label').textContent = `${MONTHS_FR[m]} ${y}`;
@@ -2444,16 +2449,29 @@ function navNext() {
 
 function setView(view) {
   state.currentView = view;
+
+  // Boutons actifs
   document.getElementById('btn-view-month').classList.toggle('active', view === 'month');
   document.getElementById('btn-view-week').classList.toggle('active',  view === 'week');
-  document.getElementById('cal-days-header').style.display = view === 'month' ? '' : 'none';
-  document.getElementById('cal-grid').style.display        = view === 'month' ? '' : 'none';
-  document.getElementById('week-view').style.display       = view === 'week'  ? '' : 'none';
+
+  // Afficher / masquer les zones
+  const hdr      = document.getElementById('cal-days-header');
+  const grid     = document.getElementById('cal-grid');
+  const weekDiv  = document.getElementById('week-view');
+
   if (view === 'week') {
+    hdr.style.setProperty('display', 'none', 'important');
+    grid.style.setProperty('display', 'none', 'important');
+    weekDiv.style.setProperty('display', 'block', 'important');
     if (!state.currentWeekStart) state.currentWeekStart = getWeekStart(state.currentDate);
-    renderWeekView();
+    if (state.isAuthenticated) fetchAllEvents().then(renderWeekView);
+    else renderWeekView();
   } else {
-    renderCalendar();
+    hdr.style.removeProperty('display');
+    grid.style.removeProperty('display');
+    weekDiv.style.setProperty('display', 'none', 'important');
+    if (state.isAuthenticated) fetchAllEvents().then(renderCalendar);
+    else renderCalendar();
   }
 }
 
