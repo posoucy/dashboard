@@ -947,8 +947,9 @@
     #ss-content {
       position: relative; z-index: 3;
       text-align: center; color: #fff;
-      padding: 40px;
+      padding: 40px 40px 20px;
       text-shadow: 0 2px 20px rgba(0,0,0,.6);
+      display: flex; flex-direction: column; align-items: center;
     }
 
     /* Heure */
@@ -1028,10 +1029,7 @@
 
     /* Bloc Spotify sur l'écran de veille */
     #ss-spotify {
-      position: absolute; bottom: 44px; left: 50%;
-      transform: translateX(-50%);
-      z-index: 3;
-      display: none; /* masqué si rien ne joue */
+      display: none;
       align-items: center; gap: 16px;
       background: rgba(0,0,0,.45);
       backdrop-filter: blur(12px);
@@ -1039,6 +1037,7 @@
       border-radius: 16px;
       padding: 12px 20px;
       min-width: 280px; max-width: min(500px, 85vw);
+      margin-top: min(2vh, 14px);
     }
     #ss-spotify.visible { display: flex; }
     #ss-sp-cover {
@@ -1434,14 +1433,14 @@
         <div id="ss-events-title">Aujourd'hui</div>
         <div id="ss-events-list"></div>
       </div>
-    </div>
-    <div id="ss-spotify">
-      <div id="ss-sp-cover"><span>🎵</span></div>
-      <div id="ss-sp-info">
-        <div id="ss-sp-title">—</div>
-        <div id="ss-sp-artist">—</div>
+      <div id="ss-spotify">
+        <div id="ss-sp-cover"><span>🎵</span></div>
+        <div id="ss-sp-info">
+          <div id="ss-sp-title">—</div>
+          <div id="ss-sp-artist">—</div>
+        </div>
+        <span id="ss-sp-icon">🎵</span>
       </div>
-      <span id="ss-sp-icon">🎵</span>
     </div>
     <div id="ss-hint">Toucher pour réveiller</div>
   </div>
@@ -1525,7 +1524,7 @@
             </div>
           </div>
         </div>
-        <div class="cal-days-header">
+        <div class="cal-days-header" id="cal-days-header">
           <div class="day-name">Dim</div>
           <div class="day-name">Lun</div>
           <div class="day-name">Mar</div>
