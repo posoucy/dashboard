@@ -298,6 +298,64 @@
     /* Agendas dropdown dans cal-nav */
     .cal-nav-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
+    /* Boutons vue mois/semaine */
+    .btn-view {
+      padding: 6px 11px; border-radius: 50px;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-muted); cursor: pointer;
+      font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
+      transition: all .18s;
+    }
+    .btn-view.active {
+      background: var(--accent); color: var(--surface);
+      border-color: var(--accent);
+    }
+    .btn-view:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+    /* Vue semaine — liste */
+    .week-view { padding: 0 8px 12px; }
+    .week-day-block { margin-bottom: 4px; }
+    .week-day-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 8px 6px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.05rem; font-weight: 600; color: var(--text);
+    }
+    .week-day-header.today { color: var(--accent); }
+    .week-day-today-badge {
+      font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em;
+      background: var(--accent); color: var(--surface);
+      padding: 2px 8px; border-radius: 20px;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .week-day-sep {
+      height: 1px; background: var(--border); margin: 0 8px 6px;
+    }
+    .week-event-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 10px; border-radius: 8px;
+      margin: 0 0 3px; cursor: pointer;
+      transition: background .15s;
+    }
+    .week-event-item:hover { background: var(--surface2); }
+    .week-event-emoji { font-size: 1rem; flex-shrink: 0; }
+    .week-event-time  {
+      font-size: 0.78rem; color: var(--text-muted);
+      flex-shrink: 0; min-width: 90px;
+    }
+    .week-event-title {
+      font-size: 0.88rem; font-weight: 600; flex: 1; min-width: 0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .week-event-cal {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .week-empty {
+      padding: 6px 10px 10px;
+      font-size: 0.78rem; color: var(--text-muted); font-style: italic;
+    }
+
     /* ── Day names ── */
     .cal-days-header {
       display: grid; grid-template-columns: repeat(7,1fr);
@@ -1442,13 +1500,16 @@
     <div class="calendar-card">
         <div class="cal-nav">
           <div class="nav-controls">
-            <button class="btn-nav" onclick="changeMonth(-1)">&#8592;</button>
+            <button class="btn-nav" id="btn-nav-prev" onclick="navPrev()">&#8592;</button>
             <div class="month-label" id="month-label">—</div>
-            <button class="btn-nav" onclick="changeMonth(1)">&#8594;</button>
+            <button class="btn-nav" id="btn-nav-next" onclick="navNext()">&#8594;</button>
             <button class="btn-today" onclick="goToToday()">Aujourd'hui</button>
           </div>
           <!-- Bouton agendas intégré dans cal-nav -->
           <div class="cal-nav-right">
+            <!-- Bascule vues -->
+            <button class="btn-view active" id="btn-view-month" onclick="setView('month')" title="Vue mois">📅</button>
+            <button class="btn-view"        id="btn-view-week"  onclick="setView('week')"  title="Vue semaine">📋</button>
             <div style="position:relative">
               <button class="btn-agendas" id="btn-agendas" onclick="toggleAgendaDropdown()">
                 🗂 Agendas <span class="agenda-badge" id="agenda-badge">0</span>
@@ -1476,6 +1537,7 @@
         <div class="cal-grid" id="cal-grid">
           <div class="spinner"></div>
         </div>
+        <div class="week-view" id="week-view" style="display:none"></div>
       </div>
   </div><!-- /calendar -->
 </div><!-- /app -->
@@ -2370,9 +2432,114 @@ function changeMonth(delta) {
   if (state.isAuthenticated) fetchAllEvents().then(renderCalendar);
   else renderCalendar();
 }
+
+function navPrev() {
+  if (state.currentView === 'week') { changeWeek(-1); }
+  else { changeMonth(-1); }
+}
+function navNext() {
+  if (state.currentView === 'week') { changeWeek(1); }
+  else { changeMonth(1); }
+}
+
+function setView(view) {
+  state.currentView = view;
+  document.getElementById('btn-view-month').classList.toggle('active', view === 'month');
+  document.getElementById('btn-view-week').classList.toggle('active',  view === 'week');
+  document.getElementById('cal-days-header').style.display = view === 'month' ? '' : 'none';
+  document.getElementById('cal-grid').style.display        = view === 'month' ? '' : 'none';
+  document.getElementById('week-view').style.display       = view === 'week'  ? '' : 'none';
+  if (view === 'week') {
+    if (!state.currentWeekStart) state.currentWeekStart = getWeekStart(state.currentDate);
+    renderWeekView();
+  } else {
+    renderCalendar();
+  }
+}
+
+function getWeekStart(date) {
+  const d = new Date(date);
+  d.setDate(d.getDate() - d.getDay()); // dimanche
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function changeWeek(delta) {
+  if (!state.currentWeekStart) state.currentWeekStart = getWeekStart(state.currentDate);
+  state.currentWeekStart.setDate(state.currentWeekStart.getDate() + delta * 7);
+  // Charger les événements si nécessaire
+  if (state.isAuthenticated) {
+    state.currentDate = new Date(state.currentWeekStart);
+    fetchAllEvents().then(renderWeekView);
+  } else {
+    renderWeekView();
+  }
+}
+
+function renderWeekView() {
+  const container = document.getElementById('week-view');
+  if (!container) return;
+
+  const ws = state.currentWeekStart || getWeekStart(new Date());
+  const we = new Date(ws); we.setDate(we.getDate() + 6);
+
+  // Mettre à jour le label du mois
+  const label = document.getElementById('month-label');
+  const opts  = { day: 'numeric', month: 'long', year: 'numeric' };
+  label.textContent = 'Sem. ' + ws.getDate() + ' – ' + we.toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const todayStr = toDateKey(new Date());
+  const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const moisFr = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+
+  let html = '';
+
+  for (let i = 0; i < 7; i++) {
+    const day    = new Date(ws); day.setDate(ws.getDate() + i);
+    const dayKey = toDateKey(day);
+    const isToday = dayKey === todayStr;
+    const evs    = (state.events[dayKey] || [])
+      .slice().sort((a,b) => (a.start||'').localeCompare(b.start||''));
+
+    html += '<div class="week-day-block">';
+    html += '<div class="week-day-header' + (isToday ? ' today' : '') + '">'
+      + jours[day.getDay()] + ' ' + day.getDate() + ' ' + moisFr[day.getMonth()]
+      + (isToday ? ' <span class="week-day-today-badge">Auj.</span>' : '')
+      + '</div>';
+    html += '<div class="week-day-sep"></div>';
+
+    if (evs.length === 0) {
+      html += '<div class="week-empty">Aucun événement</div>';
+    } else {
+      evs.forEach(ev => {
+        const timeStr = ev.start && ev.start.includes('T')
+          ? ev.start.substring(11,16)
+            + (ev.end && ev.end.includes('T') ? ' – ' + ev.end.substring(11,16) : '')
+          : 'Journée entière';
+        const color = ev.calColor || 'var(--accent)';
+        html += '<div class="week-event-item" onclick="openDetailModal(\'' + dayKey + '\',new Date(\'' + dayKey + 'T12:00:00\'),\'' + ev.id + '\')">'  
+          + '<span class="week-event-emoji">' + (ev.emoji || '📅') + '</span>'
+          + '<span class="week-event-time">'  + timeStr + '</span>'
+          + '<span class="week-event-title" style="color:' + color + '">' + ev.title + '</span>'
+          + '<span class="week-event-cal" style="background:' + color + '"></span>'
+          + '</div>';
+      });
+    }
+    html += '</div>';
+  }
+
+  container.innerHTML = html;
+}
 function goToToday() {
   state.currentDate = new Date();
-  renderCalendar();
+  if (state.currentView === 'week') {
+    state.currentWeekStart = getWeekStart(new Date());
+    if (state.isAuthenticated) fetchAllEvents().then(renderWeekView);
+    else renderWeekView();
+  } else {
+    if (state.isAuthenticated) fetchAllEvents().then(renderCalendar);
+    else renderCalendar();
+  }
 }
 
 // ═══════════════════════════════════════════
