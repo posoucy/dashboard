@@ -1482,9 +1482,6 @@
     <div class="ws-title">⚙️ Paramètres</div>
 
     <div class="ws-subtitle" style="margin-top:0">📍 Ville pour la météo</div>
-    <div class="ws-current" id="ws-current">
-      <span>📍</span><span id="ws-current-city">Non défini</span>
-    </div>
     <div class="ws-input-wrap">
       <input class="ws-input" id="ws-city-input" type="text"
         placeholder="Ex : Montréal, Paris, Lyon…"
@@ -1513,16 +1510,7 @@
       </select>
     </div>
 
-    <div style="height:1px;background:var(--border);margin:8px 0"></div>
-    <div class="ws-subtitle">🔑 Connexion</div>
-    <button id="ws-reconfigure-btn" onclick="closeWeatherSettings();showSetup()"
-      style="width:100%;padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border);
-             background:var(--surface2);color:var(--text-muted);cursor:pointer;font-family:'DM Sans',sans-serif;
-             font-size:0.82rem;text-align:left;display:none">
-      ⚙️ Modifier le Client ID Google / Spotify
-    </button>
-
-    <div class="ws-footer">
+    <div class="ws-footer" style="margin-top:10px">
       <button class="ws-btn-cancel" onclick="closeWeatherSettings()">Fermer</button>
     </div>
   </div>
@@ -3131,9 +3119,8 @@ function loadWeatherCity() {
 
 function openWeatherSettings() {
   const saved = loadWeatherCity();
-  document.getElementById('ws-current-city').textContent =
-    saved ? saved.name + ' (' + saved.lat.toFixed(2) + ', ' + saved.lon.toFixed(2) + ')' : 'Détection automatique par IP';
-  document.getElementById('ws-city-input').value = saved ? saved.name : '';
+  const cityInput = document.getElementById('ws-city-input');
+  if (cityInput) cityInput.value = saved ? saved.name : '';
   document.getElementById('ws-result').textContent = '';
   document.getElementById('ws-result').className = 'ws-result';
   document.getElementById('ws-overlay').classList.add('open');
@@ -3178,7 +3165,6 @@ async function searchWeatherCity() {
     // Bouton reconfigurer dans le panneau paramètres
     const recfgBtn = document.getElementById('ws-reconfigure-btn');
     if (recfgBtn) recfgBtn.style.display = 'block';
-    document.getElementById('ws-current-city').textContent = saved.name;
     resultEl.textContent = '✓ Ville sauvegardée : ' + saved.name;
     resultEl.className = 'ws-result ok';
     // Recharger la météo avec la nouvelle ville
