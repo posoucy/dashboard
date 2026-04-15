@@ -1510,6 +1510,22 @@
       </select>
     </div>
 
+    <div style="height:1px;background:var(--border);margin:8px 0"></div>
+
+    <div class="ws-subtitle">🖼️ Délai entre les photos (veille)</div>
+    <div style="margin-bottom:0">
+      <select class="ws-input" id="ws-photo-delay" onchange="savePhotoDelay()"
+        style="padding:9px 12px;font-size:0.9rem">
+        <option value="10">10 secondes</option>
+        <option value="20">20 secondes</option>
+        <option value="30">30 secondes</option>
+        <option value="60" selected>1 minute</option>
+        <option value="120">2 minutes</option>
+        <option value="300">5 minutes</option>
+        <option value="600">10 minutes</option>
+      </select>
+    </div>
+
     <div class="ws-footer" style="margin-top:10px">
       <button class="ws-btn-cancel" onclick="closeWeatherSettings()">Fermer</button>
     </div>
@@ -3997,6 +4013,7 @@ function svgRepeat()  { return '<svg viewBox="0 0 24 24" fill="none" stroke="cur
 // ═══════════════════════════════════════════
 
 const IDLE_DELAY_KEY = 'gcal_idle_delay';
+const SS_PHOTO_DELAY_KEY = 'gcal_ss_photo_delay';
 const SS_GRADIENTS = [
   // Nuit    (0h-5h)  : bleu nuit profond
   'linear-gradient(135deg, #0a0e1a 0%, #1a2340 50%, #0d1b2a 100%)',
@@ -4030,6 +4047,7 @@ let ssState = {
   spTimer:      null,   // polling Spotify pendant la veille
   queryIdx:     0,
   idleDelay:    30,     // minutes
+  photoDelay:   60,     // secondes
 };
 
 // ── Charger / sauvegarder le délai ──
@@ -4048,11 +4066,28 @@ function saveIdleDelay() {
   showToast(val === 0 ? 'Veille désactivée' : 'Délai mis à jour : ' + sel.options[sel.selectedIndex].text, 'success');
 }
 
+function loadPhotoDelay() {
+  try {
+    const v = parseInt(localStorage.getItem(SS_PHOTO_DELAY_KEY));
+    return isNaN(v) ? 60 : v;
+  } catch { return 60; }
+}
+function savePhotoDelay() {
+  const sel = document.getElementById('ws-photo-delay');
+  const val = parseInt(sel.value);
+  ssState.photoDelay = val;
+  localStorage.setItem(SS_PHOTO_DELAY_KEY, val);
+  showToast('Délai des photos mis à jour : ' + sel.options[sel.selectedIndex].text, 'success');
+}
+
 // ── Initialiser le délai sauvegardé dans le select ──
 function initIdleSettings() {
   ssState.idleDelay = loadIdleDelay();
   const sel = document.getElementById('ws-idle-delay');
   if (sel) sel.value = ssState.idleDelay;
+  ssState.photoDelay = loadPhotoDelay();
+  const selPhoto = document.getElementById('ws-photo-delay');
+  if (selPhoto) selPhoto.value = ssState.photoDelay;
 }
 
 // ── Réinitialiser le timer d'inactivité ──
@@ -4105,11 +4140,11 @@ function activateScreensaver() {
     }
   }, 5000);
 
-  // Photo toutes les minutes
+  // Changer la photo selon le délai configuré
   ssState.photoTimer = setInterval(() => {
     ssState.queryIdx = (ssState.queryIdx + 1) % SS_UNSPLASH_QUERIES.length;
     updateScreensaverPhoto();
-  }, 60 * 1000);
+  }, ssState.photoDelay * 1000);
 }
 
 // ── Désactiver (wake up) ──
