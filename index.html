@@ -257,6 +257,68 @@
     .auth-notice h3 { font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; margin-bottom: 4px; }
     .auth-notice p { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 14px; }
 
+    /* ── Écran de configuration Client ID ── */
+    .setup-overlay {
+      position: fixed; inset: 0; z-index: 600;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .setup-overlay.hidden { display: none; }
+    .setup-card {
+      background: var(--surface); border-radius: 24px;
+      box-shadow: var(--shadow-lg); border: 1px solid var(--border);
+      padding: 36px 40px; width: 100%; max-width: 520px;
+      text-align: center;
+    }
+    .setup-icon  { font-size: 3rem; margin-bottom: 16px; }
+    .setup-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem; font-weight: 600; color: var(--text);
+      margin-bottom: 8px;
+    }
+    .setup-subtitle {
+      font-size: 0.88rem; color: var(--text-muted);
+      margin-bottom: 28px; line-height: 1.6;
+    }
+    .setup-field { margin-bottom: 16px; text-align: left; }
+    .setup-label {
+      display: block; font-size: 0.75rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .06em;
+      color: var(--text-muted); margin-bottom: 6px;
+    }
+    .setup-input {
+      width: 100%; padding: 12px 16px;
+      border-radius: var(--radius-sm); border: 1.5px solid var(--border);
+      background: var(--surface2); color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 0.92rem;
+      outline: none; transition: border-color .18s;
+    }
+    .setup-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(107,127,94,.12); }
+    .setup-hint {
+      font-size: 0.72rem; color: var(--text-muted);
+      margin-top: 5px; line-height: 1.5;
+    }
+    .setup-hint a { color: var(--accent); text-decoration: none; }
+    .setup-btn {
+      width: 100%; padding: 14px; border-radius: 50px; border: none;
+      background: var(--accent); color: var(--surface);
+      font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 700;
+      cursor: pointer; transition: all .2s; margin-top: 8px;
+      box-shadow: 0 4px 16px rgba(107,127,94,.3);
+    }
+    .setup-btn:hover { background: #5a6c4e; transform: translateY(-1px); }
+    .setup-separator {
+      height: 1px; background: var(--border);
+      margin: 20px 0; position: relative;
+    }
+    .setup-separator span {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      background: var(--surface); padding: 0 10px;
+      font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;
+    }
+    .setup-optional { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 6px; text-align: left; }
+
     /* ── Calendar card ── */
     .calendar-card {
       background: var(--surface);
@@ -1311,6 +1373,48 @@
 </head>
 <body>
 
+<!-- ══ ÉCRAN DE CONFIGURATION ══ -->
+<div class="setup-overlay hidden" id="setup-overlay">
+  <div class="setup-card">
+    <div class="setup-icon">📅</div>
+    <div class="setup-title">Mon Calendrier</div>
+    <div class="setup-subtitle">
+      Entrez votre <strong>Client ID Google</strong> pour connecter votre Google Agenda.<br>
+      Cette information est sauvegardée uniquement sur cet appareil.
+    </div>
+
+    <div class="setup-field">
+      <label class="setup-label" for="setup-client-id">Client ID Google OAuth 2.0 *</label>
+      <input class="setup-input" id="setup-client-id" type="text"
+        placeholder="xxxxxxxxxxxx-xxxxxxxx.apps.googleusercontent.com"
+        onkeydown="if(event.key==='Enter')saveSetup()"/>
+      <div class="setup-hint">
+        Obtenez-le sur
+        <a href="https://console.cloud.google.com/apis/credentials" target="_blank">console.cloud.google.com</a>
+        → Identifiants → Créer un ID client OAuth (Application Web).
+        Ajoutez l'URL de cette page dans les origines JS et URI de redirection autorisés.
+      </div>
+    </div>
+
+    <div class="setup-separator"><span>Optionnel</span></div>
+
+    <div class="setup-optional">🎵 Client ID Spotify (pour le contrôle musical)</div>
+    <div class="setup-field">
+      <label class="setup-label" for="setup-spotify-id">Client ID Spotify</label>
+      <input class="setup-input" id="setup-spotify-id" type="text"
+        placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        onkeydown="if(event.key==='Enter')saveSetup()"/>
+      <div class="setup-hint">
+        Obtenez-le sur
+        <a href="https://developer.spotify.com/dashboard" target="_blank">developer.spotify.com/dashboard</a>
+        → Créer une app. Ajoutez l'URL de cette page dans les Redirect URIs.
+      </div>
+    </div>
+
+    <button class="setup-btn" onclick="saveSetup()">✓ Enregistrer et commencer</button>
+  </div>
+</div>
+
 <div class="app">
 
   <!-- ══ LIGNE 1 : DATE / HEURE / MÉTÉO / DÉCONNEXION ══ -->
@@ -1408,6 +1512,15 @@
         <option value="120">2 heures</option>
       </select>
     </div>
+
+    <div style="height:1px;background:var(--border);margin:8px 0"></div>
+    <div class="ws-subtitle">🔑 Connexion</div>
+    <button id="ws-reconfigure-btn" onclick="closeWeatherSettings();showSetup()"
+      style="width:100%;padding:8px;border-radius:var(--radius-sm);border:1px solid var(--border);
+             background:var(--surface2);color:var(--text-muted);cursor:pointer;font-family:'DM Sans',sans-serif;
+             font-size:0.82rem;text-align:left;display:none">
+      ⚙️ Modifier le Client ID Google / Spotify
+    </button>
 
     <div class="ws-footer">
       <button class="ws-btn-cancel" onclick="closeWeatherSettings()">Fermer</button>
@@ -1640,12 +1753,92 @@
 // ═══════════════════════════════════════════
 //   CONFIG — Remplacez par vos vraies clés
 // ═══════════════════════════════════════════
-const GOOGLE_CONFIG = {
-  clientId:     '647348410681-90bses902v8ln2766frod7lt29jske7u.apps.googleusercontent.com',
-  apiKey:       'AIzaSyBSbgEvnuLAiIg71kk4K2k-RltRPorYLMs',
-  scopes:       'https://www.googleapis.com/auth/calendar',
-  discoveryDoc: 'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
+// ═══════════════════════════════════════════
+//   CONFIGURATION — stockée dans localStorage
+//   Pas de clés en dur — chaque utilisateur
+//   entre son propre Client ID au premier lancement
+// ═══════════════════════════════════════════
+const CONFIG_KEY = 'gcal_config';
+
+function loadConfig() {
+  try {
+    const raw = localStorage.getItem(CONFIG_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveConfig(clientId, spotifyId) {
+  localStorage.setItem(CONFIG_KEY, JSON.stringify({
+    clientId:  clientId.trim(),
+    spotifyId: (spotifyId || '').trim(),
+  }));
+}
+
+// Config active — chargée au démarrage
+let GOOGLE_CONFIG = {
+  clientId:  '',
+  scopes:    'https://www.googleapis.com/auth/calendar',
 };
+
+function initConfig() {
+  const cfg = loadConfig();
+  if (cfg && cfg.clientId) {
+    GOOGLE_CONFIG.clientId = cfg.clientId;
+    // Mettre à jour le Client ID Spotify si fourni
+    if (cfg.spotifyId) {
+      SPOTIFY_CLIENT_ID_DYNAMIC = cfg.spotifyId;
+    }
+    return true; // config trouvée
+  }
+  return false; // pas de config → afficher l'écran de setup
+}
+
+// ── Écran de configuration ──
+function showSetup() {
+  const overlay = document.getElementById('setup-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('hidden');
+  // Pré-remplir si déjà configuré
+  const cfg = loadConfig();
+  if (cfg) {
+    const cid = document.getElementById('setup-client-id');
+    const sid = document.getElementById('setup-spotify-id');
+    if (cid) cid.value = cfg.clientId || '';
+    if (sid) sid.value = cfg.spotifyId || '';
+  }
+  setTimeout(() => document.getElementById('setup-client-id')?.focus(), 200);
+}
+
+function hideSetup() {
+  const overlay = document.getElementById('setup-overlay');
+  if (overlay) overlay.classList.add('hidden');
+}
+
+function saveSetup() {
+  const clientId  = (document.getElementById('setup-client-id')?.value || '').trim();
+  const spotifyId = (document.getElementById('setup-spotify-id')?.value || '').trim();
+
+  if (!clientId || !clientId.includes('.apps.googleusercontent.com')) {
+    document.getElementById('setup-client-id')?.focus();
+    showToast('⚠️ Client ID Google invalide', 'error');
+    return;
+  }
+
+  saveConfig(clientId, spotifyId);
+  GOOGLE_CONFIG.clientId = clientId;
+  if (spotifyId) SPOTIFY_CLIENT_ID_DYNAMIC = spotifyId;
+
+  hideSetup();
+  showToast('✓ Configuration sauvegardée', 'success');
+
+  // Démarrer l'app
+  startApp();
+}
+
+// Bouton ⚙ long press → reconfigurer (accessible depuis la barre)
+function openSetupIfNeeded() {
+  showSetup();
+}
 
 // Rafraîchissement toutes les 60 secondes
 // (quasi temps réel sans abuser du quota Google)
@@ -1847,20 +2040,8 @@ function clearUrlHash() {
 }
 
 function loadGoogleAPI() {
-  const s = document.createElement('script');
-  s.src = 'https://apis.google.com/js/api.js';
-  s.onload = () => gapi.load('client', initGapiClient);
-  document.head.appendChild(s);
-}
-
-async function initGapiClient() {
-  try {
-    await gapi.client.init({
-      apiKey:        GOOGLE_CONFIG.apiKey,
-      discoveryDocs: [GOOGLE_CONFIG.discoveryDoc],
-    });
-  } catch(e) {}
-  await checkAuthOnLoad();
+  // Plus besoin de gapi — on utilise fetch directement avec le token OAuth
+  checkAuthOnLoad();
 }
 
 // ─────────────────────────────────────────
@@ -2030,8 +2211,8 @@ function handleAuth() {
     showToast('Déconnecté');
     return;
   }
-  if (GOOGLE_CONFIG.clientId === 'VOTRE_CLIENT_ID.apps.googleusercontent.com') {
-    showToast('⚙️ Configurez vos clés API dans le fichier', 'error'); return;
+  if (!GOOGLE_CONFIG.clientId) {
+    showSetup(); return;
   }
   // Redirection complète — aucun popup !
   window.location.href = buildOAuthUrl('select_account');
@@ -2994,6 +3175,9 @@ async function searchWeatherCity() {
       tz:      city.timezone || 'auto',
     };
     saveWeatherCity(saved);
+    // Bouton reconfigurer dans le panneau paramètres
+    const recfgBtn = document.getElementById('ws-reconfigure-btn');
+    if (recfgBtn) recfgBtn.style.display = 'block';
     document.getElementById('ws-current-city').textContent = saved.name;
     resultEl.textContent = '✓ Ville sauvegardée : ' + saved.name;
     resultEl.className = 'ws-result ok';
@@ -3164,7 +3348,13 @@ document.addEventListener('keydown', function(e) {
 // ═══════════════════════════════════════════
 //   SPOTIFY
 // ═══════════════════════════════════════════
-const SPOTIFY_CLIENT_ID  = '66a48b8fc75f4f9786635296bcdec44c';
+// Client ID Spotify — chargé depuis la config ou valeur par défaut
+let SPOTIFY_CLIENT_ID_DYNAMIC = '66a48b8fc75f4f9786635296bcdec44c';
+// Alias utilisé partout dans le code Spotify
+Object.defineProperty(window, 'SPOTIFY_CLIENT_ID', {
+  get: () => SPOTIFY_CLIENT_ID_DYNAMIC,
+  configurable: true,
+});
 const SPOTIFY_SCOPES     = [
   'user-read-playback-state',
   'user-modify-playback-state',
