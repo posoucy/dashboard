@@ -1228,7 +1228,7 @@
       position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(.95);
       background: var(--surface); border-radius: var(--radius);
       box-shadow: var(--shadow-lg); border: 1px solid var(--border);
-      padding: 16px 20px; width: 340px; z-index: 400;
+      padding: 14px 18px; width: 340px; z-index: 400;
       opacity: 0; pointer-events: none;
       transition: opacity .22s, transform .22s cubic-bezier(.34,1.2,.64,1);
     }
@@ -1245,13 +1245,13 @@
     .ws-title {
       font-family: 'Cormorant Garamond', serif;
       font-size: 1.2rem; font-weight: 600; color: var(--text);
-      margin-bottom: 10px;
+      margin-bottom: 8px;
     }
     .ws-subtitle {
-      font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px;
+      font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;
     }
     .ws-input-wrap {
-      display: flex; gap: 8px; align-items: center; margin-bottom: 6px;
+      display: flex; gap: 8px; align-items: center; margin-bottom: 4px;
     }
     .ws-input {
       flex: 1; padding: 8px 12px;
@@ -1272,7 +1272,7 @@
     .ws-btn-search:disabled { opacity: .55; cursor: not-allowed; transform: none; }
     .ws-result {
       font-size: 0.78rem; color: var(--text-muted);
-      min-height: 16px; margin-bottom: 8px;
+      min-height: 14px; margin-bottom: 4px;
     }
     .ws-result.ok  { color: var(--accent); }
     .ws-result.err { color: #c0392b; }
@@ -1492,41 +1492,40 @@
     </div>
     <div class="ws-result" id="ws-result"></div>
 
-    <div style="height:1px;background:var(--border);margin:8px 0"></div>
+    <div style="height:1px;background:var(--border);margin:6px 0"></div>
 
-    <div class="ws-subtitle">🌙 Délai de mise en veille</div>
-    <div style="margin-bottom:0">
-      <select class="ws-input" id="ws-idle-delay" onchange="saveIdleDelay()"
-        style="padding:9px 12px;font-size:0.9rem">
-        <option value="0">Jamais</option>
-        <option value="1">1 minute</option>
-        <option value="2">2 minutes</option>
-        <option value="5">5 minutes</option>
-        <option value="10">10 minutes</option>
-        <option value="15">15 minutes</option>
-        <option value="30" selected>30 minutes</option>
-        <option value="60">1 heure</option>
-        <option value="120">2 heures</option>
-      </select>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div>
+        <div class="ws-subtitle">🌙 Mise en veille</div>
+        <select class="ws-input" id="ws-idle-delay" onchange="saveIdleDelay()"
+          style="padding:7px 8px;font-size:0.85rem;width:100%">
+          <option value="0">Jamais</option>
+          <option value="1">1 minute</option>
+          <option value="2">2 minutes</option>
+          <option value="5">5 minutes</option>
+          <option value="10">10 minutes</option>
+          <option value="15">15 minutes</option>
+          <option value="30" selected>30 minutes</option>
+          <option value="60">1 heure</option>
+          <option value="120">2 heures</option>
+        </select>
+      </div>
+      <div>
+        <div class="ws-subtitle">🖼️ Photos (veille)</div>
+        <select class="ws-input" id="ws-photo-delay" onchange="savePhotoDelay()"
+          style="padding:7px 8px;font-size:0.85rem;width:100%">
+          <option value="10">10 secondes</option>
+          <option value="20">20 secondes</option>
+          <option value="30">30 secondes</option>
+          <option value="60" selected>1 minute</option>
+          <option value="120">2 minutes</option>
+          <option value="300">5 minutes</option>
+          <option value="600">10 minutes</option>
+        </select>
+      </div>
     </div>
 
-    <div style="height:1px;background:var(--border);margin:8px 0"></div>
-
-    <div class="ws-subtitle">🖼️ Délai entre les photos (veille)</div>
-    <div style="margin-bottom:0">
-      <select class="ws-input" id="ws-photo-delay" onchange="savePhotoDelay()"
-        style="padding:9px 12px;font-size:0.9rem">
-        <option value="10">10 secondes</option>
-        <option value="20">20 secondes</option>
-        <option value="30">30 secondes</option>
-        <option value="60" selected>1 minute</option>
-        <option value="120">2 minutes</option>
-        <option value="300">5 minutes</option>
-        <option value="600">10 minutes</option>
-      </select>
-    </div>
-
-    <div class="ws-footer" style="margin-top:10px">
+    <div class="ws-footer" style="margin-top:8px">
       <button class="ws-btn-cancel" onclick="closeWeatherSettings()">Fermer</button>
     </div>
   </div>
