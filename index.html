@@ -1291,6 +1291,23 @@
       background: var(--surface2); border-radius: var(--radius-sm);
       display: flex; align-items: center; gap: 6px;
     }
+    .ws-bell-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 3px 6px; border-radius: var(--radius-sm);
+      cursor: pointer; transition: background .15s;
+      font-size: 0.85rem; color: var(--text);
+    }
+    .ws-bell-row:hover { background: var(--surface2); }
+    .ws-bell-row input[type=radio] { accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+    .ws-bell-name { flex: 1; }
+    .ws-bell-play {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--accent); cursor: pointer; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.65rem; transition: all .15s; line-height: 1;
+    }
+    .ws-bell-play:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); }
 
     /* ══════════════════════════════════════
        MODE PORTRAIT (Fire HD 8 = 800px large)
@@ -1523,6 +1540,41 @@
           <option value="600">10 minutes</option>
         </select>
       </div>
+    </div>
+
+    <div style="height:1px;background:var(--border);margin:6px 0"></div>
+
+    <div class="ws-subtitle">🔔 Rappel 15 min avant</div>
+    <div id="ws-bell-options">
+      <label class="ws-bell-row">
+        <input type="radio" name="ws-bell" value="0" onchange="saveBellSound(0)">
+        <span class="ws-bell-name">Désactivé</span>
+      </label>
+      <label class="ws-bell-row">
+        <input type="radio" name="ws-bell" value="1" onchange="saveBellSound(1)">
+        <span class="ws-bell-name">Carillon simple</span>
+        <button class="ws-bell-play" onclick="previewBell(1,event)">▶</button>
+      </label>
+      <label class="ws-bell-row">
+        <input type="radio" name="ws-bell" value="2" onchange="saveBellSound(2)">
+        <span class="ws-bell-name">Carillon 3 notes</span>
+        <button class="ws-bell-play" onclick="previewBell(2,event)">▶</button>
+      </label>
+      <label class="ws-bell-row">
+        <input type="radio" name="ws-bell" value="3" onchange="saveBellSound(3)">
+        <span class="ws-bell-name">Cloche tibétaine</span>
+        <button class="ws-bell-play" onclick="previewBell(3,event)">▶</button>
+      </label>
+      <label class="ws-bell-row">
+        <input type="radio" name="ws-bell" value="4" onchange="saveBellSound(4)">
+        <span class="ws-bell-name">Ping notification</span>
+        <button class="ws-bell-play" onclick="previewBell(4,event)">▶</button>
+      </label>
+      <label class="ws-bell-row">
+        <input type="radio" name="ws-bell" value="5" onchange="saveBellSound(5)">
+        <span class="ws-bell-name">Carillon cathédrale</span>
+        <button class="ws-bell-play" onclick="previewBell(5,event)">▶</button>
+      </label>
     </div>
 
     <div class="ws-footer" style="margin-top:8px">
@@ -3090,6 +3142,7 @@ function updateClock() {
   document.getElementById('clock').textContent = hh + ':' + mm;
   document.getElementById('clock-date').textContent =
     DAYS_FULL[now.getDay()] + ' ' + now.getDate() + ' ' + MONTHS_FULL[now.getMonth()] + ' ' + now.getFullYear();
+  checkEventReminders();
 }
 
 // ═══════════════════════════════════════════
@@ -4087,6 +4140,141 @@ function initIdleSettings() {
   ssState.photoDelay = loadPhotoDelay();
   const selPhoto = document.getElementById('ws-photo-delay');
   if (selPhoto) selPhoto.value = ssState.photoDelay;
+  initBellSettings();
+}
+
+// ═══════════════════════════════════════════
+//   SONNETTE DE RAPPEL — Web Audio API
+// ═══════════════════════════════════════════
+const BELL_SOUND_KEY = 'gcal_bell_sound';
+let bellAudioCtx = null;
+const remindedEventIds = new Set();
+
+function loadBellSound() {
+  try { const v = parseInt(localStorage.getItem(BELL_SOUND_KEY)); return isNaN(v) ? 0 : v; }
+  catch { return 0; }
+}
+
+function saveBellSound(val) {
+  localStorage.setItem(BELL_SOUND_KEY, val);
+  showToast(val == 0 ? 'Rappel sonore désactivé' : 'Son de rappel sauvegardé', 'success');
+}
+
+function initBellSettings() {
+  const val = loadBellSound();
+  document.querySelectorAll('input[name="ws-bell"]').forEach(r => {
+    r.checked = (parseInt(r.value) === val);
+  });
+}
+
+function getAudioCtx() {
+  if (!bellAudioCtx) bellAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (bellAudioCtx.state === 'suspended') bellAudioCtx.resume();
+  return bellAudioCtx;
+}
+
+function previewBell(n, e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  playBellSound(n);
+}
+
+function playBellSound(n) {
+  try {
+    const ctx = getAudioCtx();
+    switch (n) {
+      case 1: bellSimple(ctx);    break;
+      case 2: bellThreeNotes(ctx); break;
+      case 3: bellTibetan(ctx);   break;
+      case 4: bellPing(ctx);      break;
+      case 5: bellCathedral(ctx); break;
+    }
+  } catch(e) { console.warn('Bell sound error', e); }
+}
+
+function bellSimple(ctx) {
+  const t = ctx.currentTime;
+  [0, 1.6, 3.2].forEach(d => {
+    const osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = 'sine'; osc.frequency.setValueAtTime(880, t + d);
+    g.gain.setValueAtTime(0.4, t + d);
+    g.gain.exponentialRampToValueAtTime(0.001, t + d + 1.4);
+    osc.start(t + d); osc.stop(t + d + 1.5);
+  });
+}
+
+function bellThreeNotes(ctx) {
+  const t = ctx.currentTime;
+  [880, 1109, 1319].forEach((freq, i) => {
+    const d = i * 1.6;
+    const osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = 'sine'; osc.frequency.setValueAtTime(freq, t + d);
+    g.gain.setValueAtTime(0.35, t + d);
+    g.gain.exponentialRampToValueAtTime(0.001, t + d + 1.4);
+    osc.start(t + d); osc.stop(t + d + 1.5);
+  });
+}
+
+function bellTibetan(ctx) {
+  const t = ctx.currentTime;
+  [1, 2.756, 5.404].forEach((ratio, i) => {
+    const freq = 432 * ratio;
+    if (freq > 20000) return;
+    const osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.type = 'sine'; osc.frequency.setValueAtTime(freq, t);
+    const amp = 0.3 / (i + 1);
+    g.gain.setValueAtTime(0.001, t);
+    g.gain.linearRampToValueAtTime(amp, t + 0.8);
+    g.gain.setValueAtTime(amp, t + 2);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 5);
+    osc.start(t); osc.stop(t + 5.2);
+  });
+}
+
+function bellPing(ctx) {
+  const t = ctx.currentTime;
+  [0, 1.6, 3.2].forEach(d => {
+    [[1000, 0], [1250, 0.12]].forEach(([freq, off]) => {
+      const osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.setValueAtTime(freq, t + d + off);
+      g.gain.setValueAtTime(0.3, t + d + off);
+      g.gain.exponentialRampToValueAtTime(0.001, t + d + off + 0.6);
+      osc.start(t + d + off); osc.stop(t + d + off + 0.7);
+    });
+  });
+}
+
+function bellCathedral(ctx) {
+  const t = ctx.currentTime;
+  [330, 440, 587].forEach((freq, i) => {
+    const d = i * 1.6;
+    [1, 2, 3].forEach((h, j) => {
+      const osc = ctx.createOscillator(), g = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.setValueAtTime(freq * h, t + d);
+      g.gain.setValueAtTime(0.25 / (j + 1), t + d);
+      g.gain.exponentialRampToValueAtTime(0.001, t + d + 1.5);
+      osc.start(t + d); osc.stop(t + d + 1.6);
+    });
+  });
+}
+
+function checkEventReminders() {
+  const sound = loadBellSound();
+  if (sound === 0) return;
+  const now = new Date();
+  const todayKey = toDateKey(now);
+  (state.events[todayKey] || []).forEach(ev => {
+    if (!ev.start || ev.start.length <= 10) return;
+    const diffMin = (new Date(ev.start) - now) / 60000;
+    if (diffMin >= 14.5 && diffMin < 15.5 && !remindedEventIds.has(ev.id)) {
+      remindedEventIds.add(ev.id);
+      playBellSound(sound);
+    }
+  });
 }
 
 // ── Réinitialiser le timer d'inactivité ──
