@@ -1291,24 +1291,6 @@
       background: var(--surface2); border-radius: var(--radius-sm);
       display: flex; align-items: center; gap: 6px;
     }
-    .ws-bell-row {
-      display: flex; align-items: center; gap: 8px;
-      padding: 3px 6px; border-radius: var(--radius-sm);
-      cursor: pointer; transition: background .15s;
-      font-size: 0.85rem; color: var(--text);
-    }
-    .ws-bell-row:hover { background: var(--surface2); }
-    .ws-bell-row input[type=radio] { accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
-    .ws-bell-name { flex: 1; }
-    .ws-bell-play {
-      width: 24px; height: 24px; border-radius: 50%;
-      background: var(--surface2); border: 1px solid var(--border);
-      color: var(--accent); cursor: pointer; flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.65rem; transition: all .15s; line-height: 1;
-    }
-    .ws-bell-play:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); }
-
     /* ══════════════════════════════════════
        MODE PORTRAIT (Fire HD 8 = 800px large)
        En portrait la largeur est ~800px — on
@@ -1545,36 +1527,17 @@
     <div style="height:1px;background:var(--border);margin:6px 0"></div>
 
     <div class="ws-subtitle">🔔 Rappel 15 min avant</div>
-    <div id="ws-bell-options">
-      <label class="ws-bell-row">
-        <input type="radio" name="ws-bell" value="0" onchange="saveBellSound(0)">
-        <span class="ws-bell-name">Désactivé</span>
-      </label>
-      <label class="ws-bell-row">
-        <input type="radio" name="ws-bell" value="1" onchange="saveBellSound(1)">
-        <span class="ws-bell-name">Carillon simple</span>
-        <button class="ws-bell-play" onclick="previewBell(1,event)">▶</button>
-      </label>
-      <label class="ws-bell-row">
-        <input type="radio" name="ws-bell" value="2" onchange="saveBellSound(2)">
-        <span class="ws-bell-name">Carillon 3 notes</span>
-        <button class="ws-bell-play" onclick="previewBell(2,event)">▶</button>
-      </label>
-      <label class="ws-bell-row">
-        <input type="radio" name="ws-bell" value="3" onchange="saveBellSound(3)">
-        <span class="ws-bell-name">Cloche tibétaine</span>
-        <button class="ws-bell-play" onclick="previewBell(3,event)">▶</button>
-      </label>
-      <label class="ws-bell-row">
-        <input type="radio" name="ws-bell" value="4" onchange="saveBellSound(4)">
-        <span class="ws-bell-name">Ping notification</span>
-        <button class="ws-bell-play" onclick="previewBell(4,event)">▶</button>
-      </label>
-      <label class="ws-bell-row">
-        <input type="radio" name="ws-bell" value="5" onchange="saveBellSound(5)">
-        <span class="ws-bell-name">Carillon cathédrale</span>
-        <button class="ws-bell-play" onclick="previewBell(5,event)">▶</button>
-      </label>
+    <div class="ws-input-wrap">
+      <select class="ws-input" id="ws-bell-select" onchange="saveBellSound(parseInt(this.value))"
+        style="padding:7px 8px;font-size:0.85rem;width:100%">
+        <option value="0">Désactivé</option>
+        <option value="1">Carillon simple</option>
+        <option value="2">Carillon 3 notes</option>
+        <option value="3">Cloche tibétaine</option>
+        <option value="4">Ping notification</option>
+        <option value="5">Carillon cathédrale</option>
+      </select>
+      <button class="ws-btn-search" onclick="previewSelectedBell()" title="Écouter">▶</button>
     </div>
 
     <div class="ws-footer" style="margin-top:8px">
@@ -4161,10 +4124,14 @@ function saveBellSound(val) {
 }
 
 function initBellSettings() {
-  const val = loadBellSound();
-  document.querySelectorAll('input[name="ws-bell"]').forEach(r => {
-    r.checked = (parseInt(r.value) === val);
-  });
+  const sel = document.getElementById('ws-bell-select');
+  if (sel) sel.value = loadBellSound();
+}
+
+function previewSelectedBell() {
+  const sel = document.getElementById('ws-bell-select');
+  const val = sel ? parseInt(sel.value) : 0;
+  if (val > 0) playBellSound(val);
 }
 
 function getAudioCtx() {
