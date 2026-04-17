@@ -2428,7 +2428,7 @@ async function fetchOneCalendar(calId, timeMin, timeMax, target) {
       `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?${params}`,
       { headers: { Authorization: `Bearer ${state.accessToken}` } }
     );
-    if (resp.status === 401) return 401;  // token expiré
+    if (resp.status === 401 || resp.status === 400) return 401;  // token expiré ou invalide
     if (!resp.ok) return false;
     const data  = await resp.json();
     const cal   = state.calendars.find(c => c.id === calId);
