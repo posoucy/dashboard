@@ -147,6 +147,22 @@
       animation: spin .7s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .sync-dot.error {
+      background: #ff7070; animation: none;
+    }
+
+    /* Bouton rafraîchir */
+    .btn-refresh {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,253,247,.08); border: 1px solid rgba(255,253,247,.15);
+      color: rgba(255,253,247,.5); cursor: pointer; flex-shrink: 0;
+      display: none; align-items: center; justify-content: center;
+      transition: all .2s;
+    }
+    .btn-refresh.visible { display: flex; }
+    .btn-refresh:hover { background: rgba(255,253,247,.18); color: rgba(255,253,247,.9); }
+    .btn-refresh.spinning svg { animation: spin .7s linear infinite; }
+    .btn-refresh svg { width: 16px; height: 16px; }
 
     /* Bouton déconnexion — très discret, icône seule */
     .btn-auth-disconnect {
@@ -1443,6 +1459,15 @@
     <!-- Bouton Spotify -->
     <button class="btn-spotify" id="btn-spotify" onclick="toggleSpotifyPopup()" title="Spotify">🎵</button>
 
+    <!-- Bouton rafraîchir -->
+    <button class="btn-refresh" id="btn-refresh" onclick="manualRefresh()" title="Rafraîchir">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M23 4v6h-6"/>
+        <path d="M1 20v-6h6"/>
+        <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+      </svg>
+    </button>
+
     <!-- Bouton paramètres météo -->
     <button class="btn-weather-settings" onclick="openWeatherSettings()" title="Paramètres">⚙</button>
 
@@ -1934,6 +1959,7 @@ const DAYS_LONG = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','sam
 const SESSION_KEY = 'gcal_session';
 const PREFS_KEY   = 'gcal_prefs';
 const EVENTS_CACHE_KEY = 'gcal_events_cache';
+const LOCAL_EVENTS_KEY = 'gcal_local_events';
 
 function saveEventsCache() {
   try {
@@ -1956,6 +1982,35 @@ function loadEventsCache() {
     if (Date.now() - ts > 24 * 60 * 60 * 1000) return null;
     return events;
   } catch { return null; }
+}
+
+function saveLocalEvents() {
+  try {
+    const local = {};
+    Object.keys(state.events).forEach(k => {
+      const evs = state.events[k].filter(e => e.source === 'local');
+      if (evs.length) local[k] = evs;
+    });
+    localStorage.setItem(LOCAL_EVENTS_KEY, JSON.stringify(local));
+  } catch(e) {}
+}
+
+function loadLocalEvents() {
+  try {
+    const raw = localStorage.getItem(LOCAL_EVENTS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+
+function mergeLocalEvents() {
+  const local = loadLocalEvents();
+  Object.keys(local).forEach(k => {
+    if (!state.events[k]) state.events[k] = [];
+    local[k].forEach(ev => {
+      if (!state.events[k].find(e => e.id === ev.id))
+        state.events[k].push(ev);
+    });
+  });
 }
 
 function saveSession(token, expiresIn) {
@@ -2098,23 +2153,67 @@ async function checkAuthOnLoad() {
     return;
   }
 
-  // ── Cas 3 : Token expiré → refresh silencieux ONE-SHOT
-  //    On marque qu'on a déjà tenté pour éviter une boucle infinie
+  // ── Cas 3 : Token expiré → refresh silencieux via iframe (sans redirection de page)
   if (saved && saved.expired) {
-    const alreadyTried = sessionStorage.getItem('gcal_refresh_tried');
-    if (!alreadyTried) {
-      sessionStorage.setItem('gcal_refresh_tried', '1');
-      // Tenter un refresh sans interaction utilisateur
-      window.location.href = buildOAuthUrl('none');
-      return;
+    // Afficher le cache et les événements locaux immédiatement
+    const cached = loadEventsCache();
+    if (cached) {
+      Object.keys(cached).forEach(k => {
+        if (!state.events[k]) state.events[k] = [];
+        cached[k].forEach(ev => {
+          if (!state.events[k].find(e => e.id === ev.id)) state.events[k].push(ev);
+        });
+      });
+      renderCalendar();
     }
-    // Deuxième tentative échouée → effacer et afficher l'écran de connexion
-    sessionStorage.removeItem('gcal_refresh_tried');
-    clearSession();
+    mergeLocalEvents();
+    renderCalendar();
+    silentRefreshAtStartup();
     return;
   }
 
   // ── Cas 4 : Aucune session → afficher l'écran de connexion
+}
+
+// Refresh silencieux via iframe au démarrage (token expiré, pas de redirection de page)
+function silentRefreshAtStartup() {
+  const url = buildOAuthUrl('none');
+  const iframe = document.createElement('iframe');
+  iframe.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;';
+  iframe.src = url;
+  document.body.appendChild(iframe);
+  let tries = 0;
+  const check = setInterval(async () => {
+    tries++;
+    try {
+      const hash = iframe.contentWindow?.location?.hash;
+      if (hash && hash.includes('access_token=')) {
+        clearInterval(check);
+        document.body.removeChild(iframe);
+        const params = new URLSearchParams(hash.substring(1));
+        const newToken = params.get('access_token');
+        const expires  = params.get('expires_in');
+        if (newToken) {
+          saveSession(newToken, expires || 3599);
+          await connectWithToken(newToken, false);
+        }
+        return;
+      }
+      if (hash && hash.includes('error=')) {
+        clearInterval(check);
+        document.body.removeChild(iframe);
+        clearSession();
+        showToast('Session expirée — veuillez vous reconnecter', 'error');
+        return;
+      }
+    } catch(e) { /* cross-origin — pas encore redirigé */ }
+    if (tries > 30) {
+      clearInterval(check);
+      document.body.removeChild(iframe);
+      clearSession();
+      showToast('Session expirée — veuillez vous reconnecter', 'error');
+    }
+  }, 1000);
 }
 
 // Connecter avec un token (déjà validé ou frais)
@@ -2149,8 +2248,13 @@ async function connectWithToken(token, isNewToken) {
     renderCalendar(); // afficher immédiatement le cache
   }
 
+  // Restaurer les événements locaux non synchronisés
+  mergeLocalEvents();
+
   await loadCalendarList();
   await fetchAllEvents();
+  // Synchroniser les événements locaux en attente vers Google
+  await syncLocalEventsToGoogle();
   renderCalendar();
   startAutoRefresh();
   scheduleTokenRefresh();
@@ -2158,9 +2262,9 @@ async function connectWithToken(token, isNewToken) {
 
 // ── Refresh silencieux via iframe (ne vide PAS la page) ──
 function silentRefreshInBackground() {
-  // Éviter les refreshs en boucle
   if (state._refreshing) return;
   state._refreshing = true;
+  setDisconnected(true, 'Reconnexion…');
 
   const url = buildOAuthUrl('none');
   const iframe = document.createElement('iframe');
@@ -2168,11 +2272,8 @@ function silentRefreshInBackground() {
   iframe.src = url;
   document.body.appendChild(iframe);
 
-  // Écouter le retour de Google dans l'iframe
-  // Google va rediriger vers notre page avec le token dans le hash
-  // Mais dans une iframe same-origin, on peut lire la nouvelle URL
   let tries = 0;
-  const check = setInterval(() => {
+  const check = setInterval(async () => {
     tries++;
     try {
       const hash = iframe.contentWindow?.location?.hash;
@@ -2186,15 +2287,28 @@ function silentRefreshInBackground() {
         if (newToken) {
           saveSession(newToken, expires || 3599);
           state.accessToken = newToken;
+          setDisconnected(false);
+          await syncLocalEventsToGoogle();
           fetchAllEvents().then(renderCalendar);
           scheduleTokenRefresh();
         }
+        return;
+      }
+      if (hash && hash.includes('error=')) {
+        clearInterval(check);
+        document.body.removeChild(iframe);
+        state._refreshing = false;
+        setDisconnected(true, 'Déconnecté');
+        setTimeout(() => silentRefreshInBackground(), 5 * 60 * 1000);
+        return;
       }
     } catch(e) { /* cross-origin — pas encore redirigé */ }
-    if (tries > 30) { // 30 sec timeout
+    if (tries > 30) {
       clearInterval(check);
       document.body.removeChild(iframe);
       state._refreshing = false;
+      setDisconnected(true, 'Déconnecté');
+      setTimeout(() => silentRefreshInBackground(), 5 * 60 * 1000);
     }
   }, 1000);
 }
@@ -2265,6 +2379,10 @@ function updateAuthUI() {
 
   // Sync dot
   document.getElementById('sync-bar').classList.toggle('visible', auth);
+
+  // Bouton rafraîchir
+  const btnRefresh = document.getElementById('btn-refresh');
+  if (btnRefresh) btnRefresh.classList.toggle('visible', auth);
 }
 
 // ═══════════════════════════════════════════
@@ -2497,6 +2615,48 @@ function updateSyncLabel() {
   const hh  = String(now.getHours()).padStart(2, '0');
   const mm  = String(now.getMinutes()).padStart(2, '0');
   document.getElementById('sync-label').textContent = `Mis à jour à ${hh}:${mm}`;
+}
+
+function setDisconnected(disconnected, message) {
+  state._disconnected = disconnected;
+  const dot   = document.getElementById('sync-dot');
+  const label = document.getElementById('sync-label');
+  if (!dot || !label) return;
+  if (disconnected) {
+    dot.classList.remove('spinning');
+    dot.classList.add('error');
+    label.textContent = message || 'Déconnecté';
+  } else {
+    dot.classList.remove('error');
+    updateSyncLabel();
+  }
+}
+
+async function manualRefresh() {
+  const btn = document.getElementById('btn-refresh');
+  if (btn) btn.classList.add('spinning');
+  await fetchAllEvents();
+  renderCalendar();
+  if (btn) btn.classList.remove('spinning');
+}
+
+async function syncLocalEventsToGoogle() {
+  if (!state.isAuthenticated || !state.accessToken) return;
+  const pending = [];
+  Object.keys(state.events).forEach(k => {
+    state.events[k].filter(e => e.source === 'local').forEach(e => pending.push({ key: k, ev: e }));
+  });
+  if (!pending.length) return;
+  let synced = 0;
+  for (const { ev } of pending) {
+    const gEv = await createGoogleEvent(ev, ev.calId);
+    if (gEv) { ev.id = gEv.id; ev.source = 'google'; synced++; }
+  }
+  if (synced > 0) {
+    saveLocalEvents();
+    renderCalendar();
+    showToast(`✓ ${synced} événement${synced > 1 ? 's' : ''} synchronisé${synced > 1 ? 's' : ''} avec Google`, 'success');
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -2949,6 +3109,7 @@ async function submitEvent() {
 
   if (!state.events[dateVal]) state.events[dateVal] = [];
   state.events[dateVal].push(ev);
+  if (ev.source === 'local') saveLocalEvents();
 
   btn.disabled = false;
   btn.textContent = "✓ Enregistrer l'événement";
@@ -2968,6 +3129,7 @@ async function deleteEvent(dateKey, evId, calId, e) {
   if (!confirm(`Supprimer "${ev.title}" ?`)) return;
   if (ev.source === 'google') await deleteGoogleEvent(evId, calId || ev.calId);
   state.events[dateKey].splice(idx, 1);
+  if (ev.source === 'local') saveLocalEvents();
   renderCalendar();
   closeModal('detail-overlay');
   showToast('Événement supprimé');
