@@ -141,24 +141,24 @@
 
     /* Bouton rafraîchir */
     .btn-refresh {
-      width: 36px; height: 36px; border-radius: 50%;
+      width: 52px; height: 52px; border-radius: 50%;
       background: rgba(255,253,247,.08); border: 1px solid rgba(255,253,247,.15);
-      color: rgba(255,253,247,.5); cursor: pointer; flex-shrink: 0;
+      color: rgba(255,253,247,.6); cursor: pointer; flex-shrink: 0;
       display: none; align-items: center; justify-content: center;
       transition: all .2s;
     }
     .btn-refresh.visible { display: flex; }
-    .btn-refresh:hover { background: rgba(255,253,247,.18); color: rgba(255,253,247,.9); }
+    .btn-refresh:hover { background: rgba(255,253,247,.18); color: rgba(255,253,247,.95); transform: scale(1.07); }
     .btn-refresh.spinning svg { animation: spin .7s linear infinite; }
-    .btn-refresh svg { width: 16px; height: 16px; }
+    .btn-refresh svg { width: 22px; height: 22px; }
 
-    /* Bouton déconnexion — très discret, icône seule */
+    /* Bouton déconnexion */
     .btn-auth-disconnect {
       display: none;
-      width: 36px; height: 36px; border-radius: 50%;
+      width: 52px; height: 52px; border-radius: 50%;
       background: rgba(255,253,247,.08);
       border: 1px solid rgba(255,253,247,.15);
-      color: rgba(255,253,247,.45);
+      color: rgba(255,253,247,.6);
       cursor: pointer; flex-shrink: 0;
       align-items: center; justify-content: center;
       transition: all .2s; margin-left: auto;
@@ -167,9 +167,9 @@
     .btn-auth-disconnect:hover {
       background: rgba(192,57,43,.3);
       border-color: rgba(192,57,43,.5);
-      color: #ff8a80;
+      color: #ff8a80; transform: scale(1.07);
     }
-    .btn-auth-disconnect svg { width: 17px; height: 17px; }
+    .btn-auth-disconnect svg { width: 22px; height: 22px; }
 
     /* Bouton connexion principal (plein) */
     .btn-auth {
@@ -334,49 +334,47 @@
     }
     .cal-nav {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 10px 16px;
+      padding: 7px 14px;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      gap: 12px;
+      gap: 8px;
     }
     .month-label {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 1.85rem; font-weight: 600; letter-spacing: -0.3px;
+      font-size: 1.6rem; font-weight: 600; letter-spacing: -0.2px;
       color: var(--text); flex-shrink: 0;
     }
-    .nav-controls { display: flex; align-items: center; gap: 8px; flex: 1; }
+    .nav-controls { display: flex; align-items: center; gap: 6px; flex: 1; }
     .btn-nav {
-      width: 58px; height: 58px; border-radius: 50%;
-      background: var(--surface2); border: 1.5px solid var(--border);
+      width: 42px; height: 42px; border-radius: 50%;
+      background: var(--surface2); border: 1px solid var(--border);
       color: var(--text); cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.35rem; transition: all .2s; flex-shrink: 0;
-      box-shadow: 0 1px 4px rgba(45,42,36,.06);
+      font-size: 1.1rem; transition: all .2s; flex-shrink: 0;
     }
-    .btn-nav:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); transform: scale(1.07); box-shadow: 0 4px 12px rgba(107,127,94,.25); }
+    .btn-nav:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); transform: scale(1.07); }
     .btn-today {
-      padding: 13px 26px; border-radius: 50px;
-      background: var(--surface2); border: 1.5px solid var(--border);
+      padding: 9px 18px; border-radius: 50px;
+      background: var(--surface2); border: 1px solid var(--border);
       color: var(--text); cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 600;
-      transition: all .2s; letter-spacing: 0.01em;
-      box-shadow: 0 1px 4px rgba(45,42,36,.06);
+      font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500;
+      transition: all .2s;
     }
-    .btn-today:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); box-shadow: 0 4px 12px rgba(107,127,94,.25); }
+    .btn-today:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); }
     /* Agendas dropdown dans cal-nav */
     .cal-nav-right { display: flex; align-items: center; gap: 6px; flex: 1; justify-content: flex-end; }
 
     /* Boutons vue mois/semaine */
     .btn-view {
-      padding: 10px 18px; border-radius: 50px;
-      background: var(--surface2); border: 1.5px solid var(--border);
+      padding: 6px 11px; border-radius: 50px;
+      background: var(--surface2); border: 1px solid var(--border);
       color: var(--text-muted); cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500;
-      transition: all .18s; box-shadow: 0 1px 4px rgba(45,42,36,.06);
+      font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
+      transition: all .18s;
     }
     .btn-view.active {
       background: var(--accent); color: var(--surface);
-      border-color: var(--accent); box-shadow: 0 4px 12px rgba(107,127,94,.25);
+      border-color: var(--accent);
     }
     .btn-view:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
 
@@ -775,13 +773,13 @@
        SPOTIFY
     ══════════════════════════════════════ */
     .btn-spotify {
-      width: 36px; height: 36px; border-radius: 50%;
+      width: 52px; height: 52px; border-radius: 50%;
       background: rgba(255,253,247,.08); border: 1px solid rgba(255,253,247,.15);
-      color: rgba(255,253,247,.5); cursor: pointer; flex-shrink: 0;
+      color: rgba(255,253,247,.6); cursor: pointer; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.15rem; transition: all .2s;
+      font-size: 1.55rem; transition: all .2s;
     }
-    .btn-spotify:hover { background: rgba(30,215,96,.25); color: #1ed760; border-color: rgba(30,215,96,.4); }
+    .btn-spotify:hover { background: rgba(30,215,96,.25); color: #1ed760; border-color: rgba(30,215,96,.4); transform: scale(1.07); }
     .btn-spotify.playing {
       color: #1ed760; border-color: rgba(30,215,96,.4); background: rgba(30,215,96,.15);
       animation: music-bounce .6s ease-in-out infinite alternate;
@@ -1215,18 +1213,18 @@
 
     /* ── Bouton paramètres météo ── */
     .btn-weather-settings {
-      width: 36px; height: 36px; border-radius: 50%;
+      width: 52px; height: 52px; border-radius: 50%;
       background: rgba(255,253,247,.08);
       border: 1px solid rgba(255,253,247,.15);
-      color: rgba(255,253,247,.4);
+      color: rgba(255,253,247,.6);
       cursor: pointer; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.1rem; transition: all .2s;
+      font-size: 1.5rem; transition: all .2s;
     }
     .btn-weather-settings:hover {
       background: rgba(255,253,247,.18);
-      color: rgba(255,253,247,.9);
-      transform: rotate(45deg);
+      color: rgba(255,253,247,.95);
+      transform: rotate(45deg) scale(1.07);
     }
 
     /* ── Panneau paramètres ville ── */
