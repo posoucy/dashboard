@@ -113,30 +113,18 @@
       font-size: 0.75rem; color: rgba(255,253,247,.4); padding: 2px 0;
     }
 
-    /* Prévisions horizontales compactes */
-    .weather-forecast {
-      display: flex; gap: 8px; align-items: center;
-      border-left: 1px solid rgba(255,253,247,.12);
-      padding-left: 12px; flex: 1;
-    }
-    .forecast-col {
-      display: flex; flex-direction: column;
-      align-items: center; gap: 1px;
-    }
-    .forecast-day  { font-size: 0.78rem; color: rgba(255,253,247,.4); }
-    .forecast-icon { font-size: 1.2rem; line-height: 1; }
-    .forecast-temp { font-size: 0.88rem; font-weight: 600; color: var(--today-fg); }
-    .forecast-min  { font-size: 0.8rem; color: rgba(255,253,247,.35); }
 
-    /* Sync dot dans la barre sombre */
+    /* Sync dot — chip centré dans cal-nav */
     .sync-bar {
-      display: none; align-items: center; gap: 5px;
-      font-size: 0.65rem; color: rgba(255,253,247,.4);
-      flex-shrink: 0;
+      display: none; align-items: center; gap: 6px;
+      padding: 5px 13px; border-radius: 50px;
+      background: var(--surface2); border: 1px solid var(--border);
+      font-size: 0.72rem; color: var(--text-muted);
+      flex-shrink: 0; white-space: nowrap;
     }
     .sync-bar.visible { display: flex; }
     .sync-dot {
-      width: 5px; height: 5px; border-radius: 50%;
+      width: 6px; height: 6px; border-radius: 50%;
       background: var(--accent); flex-shrink: 0;
       animation: syncpulse 2.5s ease-in-out infinite;
     }
@@ -148,7 +136,7 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .sync-dot.error {
-      background: #ff7070; animation: none;
+      background: #e05050; animation: none;
     }
 
     /* Bouton rafraîchir */
@@ -346,47 +334,49 @@
     }
     .cal-nav {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 7px 14px;
+      padding: 10px 16px;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
-      gap: 8px;
+      gap: 12px;
     }
     .month-label {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 1.6rem; font-weight: 600; letter-spacing: -0.2px;
+      font-size: 1.85rem; font-weight: 600; letter-spacing: -0.3px;
       color: var(--text); flex-shrink: 0;
     }
-    .nav-controls { display: flex; align-items: center; gap: 6px; flex: 1; }
+    .nav-controls { display: flex; align-items: center; gap: 8px; flex: 1; }
     .btn-nav {
-      width: 42px; height: 42px; border-radius: 50%;
-      background: var(--surface2); border: 1px solid var(--border);
+      width: 58px; height: 58px; border-radius: 50%;
+      background: var(--surface2); border: 1.5px solid var(--border);
       color: var(--text); cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.1rem; transition: all .2s; flex-shrink: 0;
+      font-size: 1.35rem; transition: all .2s; flex-shrink: 0;
+      box-shadow: 0 1px 4px rgba(45,42,36,.06);
     }
-    .btn-nav:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); transform: scale(1.07); }
+    .btn-nav:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); transform: scale(1.07); box-shadow: 0 4px 12px rgba(107,127,94,.25); }
     .btn-today {
-      padding: 9px 18px; border-radius: 50px;
-      background: var(--surface2); border: 1px solid var(--border);
+      padding: 13px 26px; border-radius: 50px;
+      background: var(--surface2); border: 1.5px solid var(--border);
       color: var(--text); cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500;
-      transition: all .2s;
+      font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 600;
+      transition: all .2s; letter-spacing: 0.01em;
+      box-shadow: 0 1px 4px rgba(45,42,36,.06);
     }
-    .btn-today:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    .btn-today:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); box-shadow: 0 4px 12px rgba(107,127,94,.25); }
     /* Agendas dropdown dans cal-nav */
-    .cal-nav-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .cal-nav-right { display: flex; align-items: center; gap: 6px; flex: 1; justify-content: flex-end; }
 
     /* Boutons vue mois/semaine */
     .btn-view {
-      padding: 6px 11px; border-radius: 50px;
-      background: var(--surface2); border: 1px solid var(--border);
+      padding: 10px 18px; border-radius: 50px;
+      background: var(--surface2); border: 1.5px solid var(--border);
       color: var(--text-muted); cursor: pointer;
-      font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
-      transition: all .18s;
+      font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500;
+      transition: all .18s; box-shadow: 0 1px 4px rgba(45,42,36,.06);
     }
     .btn-view.active {
       background: var(--accent); color: var(--surface);
-      border-color: var(--accent);
+      border-color: var(--accent); box-shadow: 0 4px 12px rgba(107,127,94,.25);
     }
     .btn-view:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
 
@@ -1447,14 +1437,6 @@
       <div class="weather-loading">Météo…</div>
     </div>
 
-    <!-- Prévisions -->
-    <div class="weather-forecast" id="weather-forecast" style="display:none"></div>
-
-    <!-- Sync dot -->
-    <div class="sync-bar" id="sync-bar" style="margin-left:auto">
-      <span class="sync-dot" id="sync-dot"></span>
-      <span id="sync-label"></span>
-    </div>
 
     <!-- Bouton Spotify -->
     <button class="btn-spotify" id="btn-spotify" onclick="toggleSpotifyPopup()" title="Spotify">🎵</button>
@@ -1659,6 +1641,11 @@
             <div class="month-label" id="month-label">—</div>
             <button class="btn-nav" id="btn-nav-next" onclick="navNext()">&#8594;</button>
             <button class="btn-today" onclick="goToToday()">Aujourd'hui</button>
+          </div>
+          <!-- Sync status centré -->
+          <div class="sync-bar" id="sync-bar">
+            <span class="sync-dot" id="sync-dot"></span>
+            <span id="sync-label"></span>
           </div>
           <!-- Bouton agendas intégré dans cal-nav -->
           <div class="cal-nav-right">
