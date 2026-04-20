@@ -113,30 +113,18 @@
       font-size: 0.75rem; color: rgba(255,253,247,.4); padding: 2px 0;
     }
 
-    /* Prévisions horizontales compactes */
-    .weather-forecast {
-      display: flex; gap: 8px; align-items: center;
-      border-left: 1px solid rgba(255,253,247,.12);
-      padding-left: 12px; flex: 1;
-    }
-    .forecast-col {
-      display: flex; flex-direction: column;
-      align-items: center; gap: 1px;
-    }
-    .forecast-day  { font-size: 0.78rem; color: rgba(255,253,247,.4); }
-    .forecast-icon { font-size: 1.2rem; line-height: 1; }
-    .forecast-temp { font-size: 0.88rem; font-weight: 600; color: var(--today-fg); }
-    .forecast-min  { font-size: 0.8rem; color: rgba(255,253,247,.35); }
 
-    /* Sync dot dans la barre sombre */
+    /* Sync dot — chip centré dans cal-nav */
     .sync-bar {
-      display: none; align-items: center; gap: 5px;
-      font-size: 0.65rem; color: rgba(255,253,247,.4);
-      flex-shrink: 0;
+      display: none; align-items: center; gap: 6px;
+      padding: 5px 13px; border-radius: 50px;
+      background: var(--surface2); border: 1px solid var(--border);
+      font-size: 0.72rem; color: var(--text-muted);
+      flex-shrink: 0; white-space: nowrap;
     }
     .sync-bar.visible { display: flex; }
     .sync-dot {
-      width: 5px; height: 5px; border-radius: 50%;
+      width: 6px; height: 6px; border-radius: 50%;
       background: var(--accent); flex-shrink: 0;
       animation: syncpulse 2.5s ease-in-out infinite;
     }
@@ -148,29 +136,29 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     .sync-dot.error {
-      background: #ff7070; animation: none;
+      background: #e05050; animation: none;
     }
 
     /* Bouton rafraîchir */
     .btn-refresh {
-      width: 36px; height: 36px; border-radius: 50%;
+      width: 52px; height: 52px; border-radius: 50%;
       background: rgba(255,253,247,.08); border: 1px solid rgba(255,253,247,.15);
-      color: rgba(255,253,247,.5); cursor: pointer; flex-shrink: 0;
+      color: rgba(255,253,247,.6); cursor: pointer; flex-shrink: 0;
       display: none; align-items: center; justify-content: center;
       transition: all .2s;
     }
     .btn-refresh.visible { display: flex; }
-    .btn-refresh:hover { background: rgba(255,253,247,.18); color: rgba(255,253,247,.9); }
+    .btn-refresh:hover { background: rgba(255,253,247,.18); color: rgba(255,253,247,.95); transform: scale(1.07); }
     .btn-refresh.spinning svg { animation: spin .7s linear infinite; }
-    .btn-refresh svg { width: 16px; height: 16px; }
+    .btn-refresh svg { width: 22px; height: 22px; }
 
-    /* Bouton déconnexion — très discret, icône seule */
+    /* Bouton déconnexion */
     .btn-auth-disconnect {
       display: none;
-      width: 36px; height: 36px; border-radius: 50%;
+      width: 52px; height: 52px; border-radius: 50%;
       background: rgba(255,253,247,.08);
       border: 1px solid rgba(255,253,247,.15);
-      color: rgba(255,253,247,.45);
+      color: rgba(255,253,247,.6);
       cursor: pointer; flex-shrink: 0;
       align-items: center; justify-content: center;
       transition: all .2s; margin-left: auto;
@@ -179,9 +167,9 @@
     .btn-auth-disconnect:hover {
       background: rgba(192,57,43,.3);
       border-color: rgba(192,57,43,.5);
-      color: #ff8a80;
+      color: #ff8a80; transform: scale(1.07);
     }
-    .btn-auth-disconnect svg { width: 17px; height: 17px; }
+    .btn-auth-disconnect svg { width: 22px; height: 22px; }
 
     /* Bouton connexion principal (plein) */
     .btn-auth {
@@ -374,7 +362,7 @@
     }
     .btn-today:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); }
     /* Agendas dropdown dans cal-nav */
-    .cal-nav-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .cal-nav-right { display: flex; align-items: center; gap: 6px; flex: 1; justify-content: flex-end; }
 
     /* Boutons vue mois/semaine */
     .btn-view {
@@ -785,13 +773,13 @@
        SPOTIFY
     ══════════════════════════════════════ */
     .btn-spotify {
-      width: 36px; height: 36px; border-radius: 50%;
+      width: 52px; height: 52px; border-radius: 50%;
       background: rgba(255,253,247,.08); border: 1px solid rgba(255,253,247,.15);
-      color: rgba(255,253,247,.5); cursor: pointer; flex-shrink: 0;
+      color: rgba(255,253,247,.6); cursor: pointer; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.15rem; transition: all .2s;
+      font-size: 1.55rem; transition: all .2s;
     }
-    .btn-spotify:hover { background: rgba(30,215,96,.25); color: #1ed760; border-color: rgba(30,215,96,.4); }
+    .btn-spotify:hover { background: rgba(30,215,96,.25); color: #1ed760; border-color: rgba(30,215,96,.4); transform: scale(1.07); }
     .btn-spotify.playing {
       color: #1ed760; border-color: rgba(30,215,96,.4); background: rgba(30,215,96,.15);
       animation: music-bounce .6s ease-in-out infinite alternate;
@@ -1225,18 +1213,18 @@
 
     /* ── Bouton paramètres météo ── */
     .btn-weather-settings {
-      width: 36px; height: 36px; border-radius: 50%;
+      width: 52px; height: 52px; border-radius: 50%;
       background: rgba(255,253,247,.08);
       border: 1px solid rgba(255,253,247,.15);
-      color: rgba(255,253,247,.4);
+      color: rgba(255,253,247,.6);
       cursor: pointer; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.1rem; transition: all .2s;
+      font-size: 1.5rem; transition: all .2s;
     }
     .btn-weather-settings:hover {
       background: rgba(255,253,247,.18);
-      color: rgba(255,253,247,.9);
-      transform: rotate(45deg);
+      color: rgba(255,253,247,.95);
+      transform: rotate(45deg) scale(1.07);
     }
 
     /* ── Panneau paramètres ville ── */
@@ -1447,14 +1435,6 @@
       <div class="weather-loading">Météo…</div>
     </div>
 
-    <!-- Prévisions -->
-    <div class="weather-forecast" id="weather-forecast" style="display:none"></div>
-
-    <!-- Sync dot -->
-    <div class="sync-bar" id="sync-bar" style="margin-left:auto">
-      <span class="sync-dot" id="sync-dot"></span>
-      <span id="sync-label"></span>
-    </div>
 
     <!-- Bouton Spotify -->
     <button class="btn-spotify" id="btn-spotify" onclick="toggleSpotifyPopup()" title="Spotify">🎵</button>
@@ -1659,6 +1639,11 @@
             <div class="month-label" id="month-label">—</div>
             <button class="btn-nav" id="btn-nav-next" onclick="navNext()">&#8594;</button>
             <button class="btn-today" onclick="goToToday()">Aujourd'hui</button>
+          </div>
+          <!-- Sync status centré -->
+          <div class="sync-bar" id="sync-bar">
+            <span class="sync-dot" id="sync-dot"></span>
+            <span id="sync-label"></span>
           </div>
           <!-- Bouton agendas intégré dans cal-nav -->
           <div class="cal-nav-right">
