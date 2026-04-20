@@ -152,6 +152,12 @@
     .btn-refresh.spinning svg { animation: spin .7s linear infinite; }
     .btn-refresh svg { width: 22px; height: 22px; }
 
+    /* Groupe boutons actions (droite de la barre) */
+    .btn-actions-group {
+      display: flex; align-items: center; gap: 8px;
+      margin-left: auto; flex-shrink: 0;
+    }
+
     /* Bouton déconnexion */
     .btn-auth-disconnect {
       display: none;
@@ -161,7 +167,7 @@
       color: rgba(255,253,247,.6);
       cursor: pointer; flex-shrink: 0;
       align-items: center; justify-content: center;
-      transition: all .2s; margin-left: auto;
+      transition: all .2s;
     }
     .btn-auth-disconnect.visible { display: flex; }
     .btn-auth-disconnect:hover {
@@ -1350,8 +1356,8 @@
       .forecast-temp { font-size: 0.8rem; }
       .forecast-min  { font-size: 0.72rem; }
       .forecast-day  { font-size: 0.7rem; }
-      .btn-auth-disconnect { width: 32px; height: 32px; }
-      .btn-auth-disconnect svg { width: 15px; height: 15px; }
+      .btn-auth-disconnect { width: 44px; height: 44px; }
+      .btn-auth-disconnect svg { width: 20px; height: 20px; }
       /* Calendrier pleine hauteur */
       .day-cell { height: calc((100vh - 118px) / 6); min-height: 0; padding: 3px 5px; margin: 1px; }
       .day-num   { font-size: 1.1rem; width: 30px; height: 30px; margin-bottom: 2px; }
@@ -1436,6 +1442,9 @@
     </div>
 
 
+    <!-- Groupe boutons actions — poussé à droite -->
+    <div class="btn-actions-group">
+
     <!-- Bouton Spotify -->
     <button class="btn-spotify" id="btn-spotify" onclick="toggleSpotifyPopup()" title="Spotify">🎵</button>
 
@@ -1451,7 +1460,7 @@
     <!-- Bouton paramètres météo -->
     <button class="btn-weather-settings" onclick="openWeatherSettings()" title="Paramètres">⚙</button>
 
-    <!-- Bouton déconnexion — icône discrète -->
+    <!-- Bouton déconnexion -->
     <button class="btn-auth-disconnect" id="btn-disconnect"
       onclick="handleAuth()" title="Déconnexion">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -1460,6 +1469,8 @@
         <line x1="21" y1="12" x2="9" y2="12"/>
       </svg>
     </button>
+
+    </div><!-- fin .btn-actions-group -->
   </div>
 
   <!-- ══ SPOTIFY POPUP ══ -->
@@ -3412,22 +3423,24 @@ async function loadWeather() {
       + (cityName ? '<div class="weather-location">📍 ' + cityName + '</div>' : '')
       + '</div>';
 
-    // Prévisions — colonnes verticales dans la barre
-    let fcHTML = '';
-    for (let i = 1; i <= 4; i++) {
-      const d    = new Date(daily.time[i] + 'T12:00:00');
-      const dico = WMO_ICONS[daily.weather_code[i]] || '🌡️';
-      const tmax = Math.round(daily.temperature_2m_max[i]);
-      const tmin = Math.round(daily.temperature_2m_min[i]);
-      fcHTML += '<div class="forecast-col">'
-        + '<span class="forecast-day">' + DAYS_SHORT[d.getDay()] + '</span>'
-        + '<span class="forecast-icon">' + dico + '</span>'
-        + '<span class="forecast-temp">' + tmax + '°</span>'
-        + '<span class="forecast-min">' + tmin + '°</span>'
-        + '</div>';
+    // Prévisions — colonnes verticales dans la barre (si l'élément existe)
+    if (fcEl) {
+      let fcHTML = '';
+      for (let i = 1; i <= 4; i++) {
+        const d    = new Date(daily.time[i] + 'T12:00:00');
+        const dico = WMO_ICONS[daily.weather_code[i]] || '🌡️';
+        const tmax = Math.round(daily.temperature_2m_max[i]);
+        const tmin = Math.round(daily.temperature_2m_min[i]);
+        fcHTML += '<div class="forecast-col">'
+          + '<span class="forecast-day">' + DAYS_SHORT[d.getDay()] + '</span>'
+          + '<span class="forecast-icon">' + dico + '</span>'
+          + '<span class="forecast-temp">' + tmax + '°</span>'
+          + '<span class="forecast-min">' + tmin + '°</span>'
+          + '</div>';
+      }
+      fcEl.innerHTML = fcHTML;
+      fcEl.style.display = 'flex';
     }
-    fcEl.innerHTML = fcHTML;
-    fcEl.style.display = 'flex';
 
     // Mettre à jour l'écran de veille si actif
     if (ssState.active) {
