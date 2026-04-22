@@ -1902,6 +1902,7 @@ let state = {
 };
 
 let refreshTimer = null;
+let _silentRefreshCleanup = null;
 
 // Collections d'émojis par catégorie — 16 par collection (2 rangées de 8)
 const EMOJI_COLLECTIONS = [
@@ -2122,6 +2123,16 @@ function loadGoogleAPI() {
 // ─────────────────────────────────────────
 async function checkAuthOnLoad() {
 
+  // ── Dans un iframe (refresh silencieux) : envoyer le résultat via postMessage ──
+  if (window !== window.top) {
+    const fromHash = parseHashFromGoogle();
+    if (fromHash) {
+      clearUrlHash();
+      try { window.parent.postMessage({ type: 'silentRefreshResult', ...fromHash }, window.location.origin); } catch(e) {}
+    }
+    return;
+  }
+
   // ── Cas 0 : Code Spotify dans l'URL ?
   const spotifyAuthed = await checkSpotifyHashToken();
   if (spotifyAuthed) {
@@ -2182,38 +2193,30 @@ function silentRefreshAtStartup() {
   iframe.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;';
   iframe.src = url;
   document.body.appendChild(iframe);
-  let tries = 0;
-  const check = setInterval(async () => {
-    tries++;
-    try {
-      const hash = iframe.contentWindow?.location?.hash;
-      if (hash && hash.includes('access_token=')) {
-        clearInterval(check);
-        document.body.removeChild(iframe);
-        const params = new URLSearchParams(hash.substring(1));
-        const newToken = params.get('access_token');
-        const expires  = params.get('expires_in');
-        if (newToken) {
-          saveSession(newToken, expires || 3599);
-          await connectWithToken(newToken, false);
-        }
-        return;
-      }
-      if (hash && hash.includes('error=')) {
-        clearInterval(check);
-        document.body.removeChild(iframe);
-        clearSession();
-        showToast('Session expirée — veuillez vous reconnecter', 'error');
-        return;
-      }
-    } catch(e) { /* cross-origin — pas encore redirigé */ }
-    if (tries > 30) {
-      clearInterval(check);
-      document.body.removeChild(iframe);
-      clearSession();
+
+  const cleanup = () => {
+    window.removeEventListener('message', onMessage);
+    clearTimeout(timeoutId);
+    try { document.body.removeChild(iframe); } catch(e) {}
+  };
+
+  const onMessage = async (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (!event.data || event.data.type !== 'silentRefreshResult') return;
+    cleanup();
+    if (event.data.token) {
+      saveSession(event.data.token, event.data.expiresIn || 3599);
+      await connectWithToken(event.data.token, false);
+    } else {
       showToast('Session expirée — veuillez vous reconnecter', 'error');
     }
-  }, 1000);
+  };
+  window.addEventListener('message', onMessage);
+
+  const timeoutId = setTimeout(() => {
+    cleanup();
+    showToast('Session expirée — veuillez vous reconnecter', 'error');
+  }, 30000);
 }
 
 // Connecter avec un token (déjà validé ou frais)
@@ -2272,45 +2275,39 @@ function silentRefreshInBackground() {
   iframe.src = url;
   document.body.appendChild(iframe);
 
-  let tries = 0;
-  const check = setInterval(async () => {
-    tries++;
-    try {
-      const hash = iframe.contentWindow?.location?.hash;
-      if (hash && hash.includes('access_token=')) {
-        clearInterval(check);
-        document.body.removeChild(iframe);
-        state._refreshing = false;
-        const params   = new URLSearchParams(hash.substring(1));
-        const newToken = params.get('access_token');
-        const expires  = params.get('expires_in');
-        if (newToken) {
-          saveSession(newToken, expires || 3599);
-          state.accessToken = newToken;
-          setDisconnected(false);
-          await syncLocalEventsToGoogle();
-          fetchAllEvents().then(renderCalendar);
-          scheduleTokenRefresh();
-        }
-        return;
-      }
-      if (hash && hash.includes('error=')) {
-        clearInterval(check);
-        document.body.removeChild(iframe);
-        state._refreshing = false;
-        setDisconnected(true, 'Déconnecté');
-        setTimeout(() => silentRefreshInBackground(), 5 * 60 * 1000);
-        return;
-      }
-    } catch(e) { /* cross-origin — pas encore redirigé */ }
-    if (tries > 30) {
-      clearInterval(check);
-      document.body.removeChild(iframe);
-      state._refreshing = false;
+  const cleanup = () => {
+    window.removeEventListener('message', onMessage);
+    clearTimeout(timeoutId);
+    try { document.body.removeChild(iframe); } catch(e) {}
+    state._refreshing = false;
+    _silentRefreshCleanup = null;
+  };
+  _silentRefreshCleanup = cleanup;
+
+  const onMessage = async (event) => {
+    if (event.origin !== window.location.origin) return;
+    if (!event.data || event.data.type !== 'silentRefreshResult') return;
+    cleanup();
+    const { token, expiresIn } = event.data;
+    if (token) {
+      saveSession(token, expiresIn || 3599);
+      state.accessToken = token;
+      setDisconnected(false);
+      await syncLocalEventsToGoogle();
+      fetchAllEvents().then(renderCalendar);
+      scheduleTokenRefresh();
+    } else {
       setDisconnected(true, 'Déconnecté');
       setTimeout(() => silentRefreshInBackground(), 5 * 60 * 1000);
     }
-  }, 1000);
+  };
+  window.addEventListener('message', onMessage);
+
+  const timeoutId = setTimeout(() => {
+    cleanup();
+    setDisconnected(true, 'Déconnecté');
+    setTimeout(() => silentRefreshInBackground(), 5 * 60 * 1000);
+  }, 30000);
 }
 
 // Programmer un refresh automatique 5 min avant expiration
@@ -2594,6 +2591,7 @@ async function fetchGoogleEvents() { return fetchAllEvents(); }
 function startAutoRefresh() {
   stopAutoRefresh();
   refreshTimer = setInterval(async () => {
+    if (state._disconnected) return;
     await fetchAllEvents();
     renderCalendar();
   }, REFRESH_MS);
@@ -2633,6 +2631,11 @@ function setDisconnected(disconnected, message) {
 }
 
 async function manualRefresh() {
+  if (state._disconnected || state._refreshing) {
+    if (_silentRefreshCleanup) _silentRefreshCleanup();
+    silentRefreshInBackground();
+    return;
+  }
   const btn = document.getElementById('btn-refresh');
   if (btn) btn.classList.add('spinning');
   await fetchAllEvents();
