@@ -113,6 +113,23 @@
       font-size: 0.75rem; color: rgba(255,253,247,.4); padding: 2px 0;
     }
 
+    /* Capteur intérieur DHT22 / ESP8266 */
+    .sensor-now {
+      display: none; align-items: center; gap: 8px; flex-shrink: 0;
+    }
+    .sensor-icon { font-size: 1.5rem; line-height: 1; }
+    .sensor-temps {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.65rem; font-weight: 600;
+      color: var(--today-fg); line-height: 1;
+      display: flex; align-items: baseline; gap: 3px;
+    }
+    .sensor-unit { font-size: 1rem; font-weight: 400; }
+    .sensor-sep-dot { color: rgba(255,253,247,.25); margin: 0 2px; font-size: 0.9rem; }
+    .sensor-label {
+      font-size: 0.75rem; color: rgba(255,253,247,.35); margin-top: 1px;
+    }
+
 
     /* Sync dot — chip centré dans cal-nav */
     .sync-bar {
@@ -1445,6 +1462,18 @@
       <div class="weather-loading">Météo…</div>
     </div>
 
+    <!-- Capteur intérieur DHT22 / ESP8266 -->
+    <div class="sensor-now" id="sensor-now">
+      <span class="sensor-icon">🏠</span>
+      <div>
+        <div class="sensor-temps">
+          <span id="sensor-temp">--</span><span class="sensor-unit">°</span>
+          <span class="sensor-sep-dot">·</span>
+          <span id="sensor-humi">--</span><span class="sensor-unit">%</span>
+        </div>
+        <div class="sensor-label">Intérieur</div>
+      </div>
+    </div>
 
     <!-- Groupe boutons actions — poussé à droite -->
     <div class="btn-actions-group">
@@ -1559,6 +1588,17 @@
       </select>
       <button class="ws-btn-search" onclick="previewSelectedBell()" title="Écouter">▶</button>
     </div>
+
+    <div style="height:1px;background:var(--border);margin:6px 0"></div>
+
+    <div class="ws-subtitle">🌡️ Capteur DHT22 (ESP8266)</div>
+    <div class="ws-input-wrap">
+      <input class="ws-input" id="ws-sensor-ip" type="text"
+        placeholder="Ex : 192.168.1.100 ou sensor.local"
+        onkeydown="if(event.key==='Enter') saveSensorConfig()"/>
+      <button class="ws-btn-search" onclick="saveSensorConfig()" title="Enregistrer">💾</button>
+    </div>
+    <div class="ws-result" id="ws-sensor-result"></div>
 
     <div class="ws-footer" style="margin-top:8px">
       <button class="ws-btn-cancel" onclick="closeWeatherSettings()">Fermer</button>
@@ -3319,6 +3359,11 @@ function openWeatherSettings() {
   if (cityInput) cityInput.value = saved ? saved.name : '';
   document.getElementById('ws-result').textContent = '';
   document.getElementById('ws-result').className = 'ws-result';
+  // Pré-remplir l'IP du capteur
+  const sensorCfg = loadSensorConfig();
+  const sensorInput = document.getElementById('ws-sensor-ip');
+  if (sensorInput) sensorInput.value = sensorCfg ? sensorCfg.host : '';
+  document.getElementById('ws-sensor-result').textContent = '';
   document.getElementById('ws-overlay').classList.add('open');
   document.getElementById('ws-panel').classList.add('open');
   setTimeout(() => document.getElementById('ws-city-input').focus(), 200);
@@ -3327,6 +3372,63 @@ function openWeatherSettings() {
 function closeWeatherSettings() {
   document.getElementById('ws-overlay').classList.remove('open');
   document.getElementById('ws-panel').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════
+//   CAPTEUR INTÉRIEUR — DHT22 / ESP8266
+// ═══════════════════════════════════════════
+const SENSOR_KEY = 'gcal_sensor_config';
+let sensorTimer = null;
+
+function loadSensorConfig() {
+  try {
+    const raw = localStorage.getItem(SENSOR_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function saveSensorConfig() {
+  const ip = (document.getElementById('ws-sensor-ip')?.value || '').trim();
+  const resultEl = document.getElementById('ws-sensor-result');
+  if (!ip) {
+    localStorage.removeItem(SENSOR_KEY);
+    document.getElementById('sensor-now').style.display = 'none';
+    stopSensorPolling();
+    if (resultEl) { resultEl.textContent = 'Capteur désactivé'; resultEl.className = 'ws-result'; }
+    return;
+  }
+  localStorage.setItem(SENSOR_KEY, JSON.stringify({ host: ip }));
+  if (resultEl) { resultEl.textContent = '✓ Adresse enregistrée — connexion…'; resultEl.className = 'ws-result ok'; }
+  stopSensorPolling();
+  loadSensorData();
+  sensorTimer = setInterval(loadSensorData, 30000);
+}
+
+async function loadSensorData() {
+  const config = loadSensorConfig();
+  if (!config) return;
+  try {
+    const resp = await fetch(`http://${config.host}/sensor`,
+      { signal: AbortSignal.timeout(5000) });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    document.getElementById('sensor-temp').textContent = parseFloat(data.temperature).toFixed(1);
+    document.getElementById('sensor-humi').textContent = Math.round(data.humidity);
+    document.getElementById('sensor-now').style.display = 'flex';
+  } catch(e) {
+    console.warn('Capteur DHT22 inaccessible:', e.message);
+  }
+}
+
+function startSensorPolling() {
+  stopSensorPolling();
+  if (!loadSensorConfig()) return;
+  loadSensorData();
+  sensorTimer = setInterval(loadSensorData, 30000);
+}
+
+function stopSensorPolling() {
+  if (sensorTimer) { clearInterval(sensorTimer); sensorTimer = null; }
 }
 
 async function searchWeatherCity() {
@@ -4628,6 +4730,7 @@ function init() {
   setInterval(updateClock, 30000);
   loadWeather();
   setInterval(loadWeather, 60 * 1000); // toutes les minutes
+  startSensorPolling();
   initIdleSettings();
   initActivityListeners();
   resetIdleTimer();
