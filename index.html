@@ -812,6 +812,79 @@
       100% { transform: scale(1.15) rotate(8deg);  }
     }
 
+    /* ── Bouton Domotique ── */
+    .btn-domotics {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: rgba(255,253,247,.08); border: 1px solid rgba(255,253,247,.15);
+      color: rgba(255,253,247,.6); cursor: pointer; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.55rem; transition: all .2s;
+    }
+    .btn-domotics:hover { background: rgba(255,165,0,.22); color: #ffb347; border-color: rgba(255,165,0,.4); transform: scale(1.07); }
+    .btn-domotics.active { color: #ffa726; border-color: rgba(255,167,38,.45); background: rgba(255,167,38,.15); }
+
+    /* ── Popup Domotique ── */
+    .domotics-overlay {
+      position: fixed; inset: 0; z-index: 350;
+      background: rgba(0,0,0,.55); backdrop-filter: blur(8px);
+      opacity: 0; pointer-events: none; transition: opacity .25s;
+    }
+    .domotics-overlay.open { opacity: 1; pointer-events: all; }
+
+    .domotics-popup {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -48%) scale(.96);
+      width: min(480px, 95vw);
+      background: var(--surface); border-radius: var(--radius);
+      box-shadow: var(--shadow-lg); border: 1px solid var(--border);
+      z-index: 351; overflow: hidden;
+      opacity: 0; pointer-events: none;
+      transition: opacity .28s, transform .28s cubic-bezier(.34,1.1,.64,1);
+      display: flex; flex-direction: column;
+    }
+    .domotics-popup.open { opacity: 1; pointer-events: all; transform: translate(-50%, -50%) scale(1); }
+
+    .dom-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 18px 12px; flex-shrink: 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .dom-title { display: flex; align-items: center; gap: 8px; font-family: 'Cormorant Garamond', serif; font-size: 1.2rem; font-weight: 600; color: var(--text); flex: 1; }
+    .dom-title-icon { font-size: 1.2rem; line-height: 1; }
+    .dom-close {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-muted); cursor: pointer; font-size: 0.9rem;
+      display: flex; align-items: center; justify-content: center; transition: all .18s;
+    }
+    .dom-close:hover { background: var(--border); color: var(--text); }
+
+    .dom-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 4px; }
+
+    .dom-section-title {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .09em; color: var(--text-muted);
+      padding: 10px 0 6px; border-top: 1px solid var(--border); margin-top: 6px;
+    }
+    .dom-section-title:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+
+    .dom-live-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; border-radius: var(--radius-sm);
+      background: var(--surface2); border: 1px solid var(--border);
+      margin-bottom: 4px;
+    }
+    .dom-live-icon { font-size: 1.6rem; line-height: 1; flex-shrink: 0; }
+    .dom-live-vals {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.5rem; font-weight: 600; color: var(--text); line-height: 1;
+      display: flex; align-items: baseline; gap: 3px;
+    }
+    .dom-live-unit { font-size: 0.9rem; font-weight: 400; }
+    .dom-live-dot { color: var(--text-muted); margin: 0 2px; font-size: 0.85rem; }
+    .dom-live-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+    .dom-live-status { margin-left: auto; font-size: 0.72rem; color: var(--text-muted); flex-shrink: 0; }
+
     /* Overlay + Popup */
     .spotify-overlay {
       position: fixed; inset: 0; z-index: 350;
@@ -1075,6 +1148,28 @@
       margin-top: 4px;
     }
 
+    /* Températures intérieure/extérieure sur la veille */
+    #ss-temps-row {
+      display: none;
+      align-items: center; justify-content: center; gap: 20px;
+      margin-top: min(2.5vh, 18px);
+    }
+    #ss-temps-row.visible { display: flex; }
+    .ss-temp-card {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(0,0,0,.45); backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,.15); border-radius: 14px;
+      padding: 10px 18px;
+    }
+    .ss-temp-card-icon { font-size: min(4vw, 2rem); line-height: 1; flex-shrink: 0; }
+    .ss-temp-card-val {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: min(6vw, 3.2rem); font-weight: 300; line-height: 1;
+      letter-spacing: -1px; color: #fff;
+    }
+    .ss-temp-card-label {
+      font-size: min(2vw, 0.78rem); color: rgba(255,255,255,.55); margin-top: 2px;
+    }
 
     /* Hint discret */
     #ss-hint {
@@ -1255,7 +1350,7 @@
       position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(.95);
       background: var(--surface); border-radius: var(--radius);
       box-shadow: var(--shadow-lg); border: 1px solid var(--border);
-      padding: 14px 18px; width: 340px; z-index: 400;
+      padding: 14px 18px; width: 360px; max-width: min(400px, 95vw); z-index: 400;
       opacity: 0; pointer-events: none;
       transition: opacity .22s, transform .22s cubic-bezier(.34,1.2,.64,1);
     }
@@ -1374,6 +1469,7 @@
       .forecast-min  { font-size: 0.72rem; }
       .forecast-day  { font-size: 0.7rem; }
       .btn-spotify { width: 44px; height: 44px; font-size: 1.3rem; }
+      .btn-domotics { width: 44px; height: 44px; font-size: 1.3rem; }
       .btn-refresh { width: 44px; height: 44px; }
       .btn-refresh svg { width: 20px; height: 20px; }
       .btn-weather-settings { width: 44px; height: 44px; font-size: 1.3rem; }
@@ -1478,6 +1574,9 @@
     <!-- Groupe boutons actions — poussé à droite -->
     <div class="btn-actions-group">
 
+    <!-- Bouton Domotique -->
+    <button class="btn-domotics" id="btn-domotics" onclick="toggleDomoticsPopup()" title="Domotique">🏠</button>
+
     <!-- Bouton Spotify -->
     <button class="btn-spotify" id="btn-spotify" onclick="toggleSpotifyPopup()" title="Spotify">🎵</button>
 
@@ -1521,6 +1620,46 @@
     </div>
     <div id="sp-body">
       <!-- Contenu dynamique -->
+    </div>
+  </div>
+
+  <!-- ══ POPUP DOMOTIQUE ══ -->
+  <div class="domotics-overlay" id="dom-overlay" onclick="closeDomoticsPopup()"></div>
+  <div class="domotics-popup" id="dom-popup">
+    <div class="dom-header">
+      <div class="dom-title"><span class="dom-title-icon">🏠</span> Domotique</div>
+      <button class="dom-close" onclick="closeDomoticsPopup()">✕</button>
+    </div>
+    <div class="dom-body">
+
+      <!-- Lecture en direct -->
+      <div class="dom-section-title">📡 Lecture en direct</div>
+      <div class="dom-live-row" id="dom-live-row">
+        <span class="dom-live-icon">🌡️</span>
+        <div>
+          <div class="dom-live-vals">
+            <span id="dom-live-temp">--</span><span class="dom-live-unit">°C</span>
+            <span class="dom-live-dot">·</span>
+            <span id="dom-live-humi">--</span><span class="dom-live-unit">%</span>
+          </div>
+          <div class="dom-live-label">Intérieur — DHT22</div>
+        </div>
+        <span class="dom-live-status" id="dom-live-status">Non configuré</span>
+      </div>
+
+      <!-- Configuration capteur -->
+      <div class="dom-section-title">⚙️ Capteur DHT22 (ESP8266)</div>
+      <div class="ws-input-wrap">
+        <input class="ws-input" id="dom-sensor-ip" type="text"
+          placeholder="Ex : 192.168.1.100 ou sensor.local"
+          onkeydown="if(event.key==='Enter') saveSensorConfig()"/>
+        <button class="ws-btn-search" onclick="saveSensorConfig()" title="Enregistrer">💾</button>
+      </div>
+      <div class="ws-result" id="dom-sensor-result"></div>
+
+      <div class="ws-footer" style="margin-top:10px">
+        <button class="ws-btn-cancel" onclick="closeDomoticsPopup()">Fermer</button>
+      </div>
     </div>
   </div>
 
@@ -1589,17 +1728,6 @@
       <button class="ws-btn-search" onclick="previewSelectedBell()" title="Écouter">▶</button>
     </div>
 
-    <div style="height:1px;background:var(--border);margin:6px 0"></div>
-
-    <div class="ws-subtitle">🌡️ Capteur DHT22 (ESP8266)</div>
-    <div class="ws-input-wrap">
-      <input class="ws-input" id="ws-sensor-ip" type="text"
-        placeholder="Ex : 192.168.1.100 ou sensor.local"
-        onkeydown="if(event.key==='Enter') saveSensorConfig()"/>
-      <button class="ws-btn-search" onclick="saveSensorConfig()" title="Enregistrer">💾</button>
-    </div>
-    <div class="ws-result" id="ws-sensor-result"></div>
-
     <div class="ws-footer" style="margin-top:8px">
       <button class="ws-btn-cancel" onclick="closeWeatherSettings()">Fermer</button>
     </div>
@@ -1618,6 +1746,23 @@
         <div id="ss-weather-right">
           <div id="ss-weather-temp">—°</div>
           <div id="ss-weather-desc">—</div>
+        </div>
+      </div>
+      <!-- Températures extérieure + intérieure -->
+      <div id="ss-temps-row">
+        <div class="ss-temp-card">
+          <span class="ss-temp-card-icon" id="ss-ext-icon">🌤️</span>
+          <div>
+            <div class="ss-temp-card-val"><span id="ss-ext-temp">--</span>°</div>
+            <div class="ss-temp-card-label">Extérieur</div>
+          </div>
+        </div>
+        <div class="ss-temp-card" id="ss-int-card" style="display:none">
+          <span class="ss-temp-card-icon">🏠</span>
+          <div>
+            <div class="ss-temp-card-val"><span id="ss-int-temp">--</span>°</div>
+            <div class="ss-temp-card-label">Intérieur</div>
+          </div>
         </div>
       </div>
       <div id="ss-events" style="display:none">
@@ -3359,11 +3504,6 @@ function openWeatherSettings() {
   if (cityInput) cityInput.value = saved ? saved.name : '';
   document.getElementById('ws-result').textContent = '';
   document.getElementById('ws-result').className = 'ws-result';
-  // Pré-remplir l'IP du capteur
-  const sensorCfg = loadSensorConfig();
-  const sensorInput = document.getElementById('ws-sensor-ip');
-  if (sensorInput) sensorInput.value = sensorCfg ? sensorCfg.host : '';
-  document.getElementById('ws-sensor-result').textContent = '';
   document.getElementById('ws-overlay').classList.add('open');
   document.getElementById('ws-panel').classList.add('open');
   setTimeout(() => document.getElementById('ws-city-input').focus(), 200);
@@ -3388,20 +3528,34 @@ function loadSensorConfig() {
 }
 
 function saveSensorConfig() {
-  const ip = (document.getElementById('ws-sensor-ip')?.value || '').trim();
-  const resultEl = document.getElementById('ws-sensor-result');
+  const ip = (document.getElementById('dom-sensor-ip')?.value || '').trim();
+  const resultEl = document.getElementById('dom-sensor-result');
   if (!ip) {
     localStorage.removeItem(SENSOR_KEY);
     document.getElementById('sensor-now').style.display = 'none';
+    updateDomoticsLiveRow(null, null);
     stopSensorPolling();
     if (resultEl) { resultEl.textContent = 'Capteur désactivé'; resultEl.className = 'ws-result'; }
     return;
   }
   localStorage.setItem(SENSOR_KEY, JSON.stringify({ host: ip }));
-  if (resultEl) { resultEl.textContent = '✓ Adresse enregistrée — connexion…'; resultEl.className = 'ws-result ok'; }
+  if (resultEl) { resultEl.textContent = '✓ Adresse enregistrée — connexion en cours…'; resultEl.className = 'ws-result ok'; }
   stopSensorPolling();
   loadSensorData();
   sensorTimer = setInterval(loadSensorData, 30000);
+}
+
+function updateDomoticsLiveRow(temp, humi) {
+  const status = document.getElementById('dom-live-status');
+  if (temp !== null && humi !== null) {
+    document.getElementById('dom-live-temp').textContent = parseFloat(temp).toFixed(1);
+    document.getElementById('dom-live-humi').textContent = Math.round(humi);
+    if (status) { status.textContent = 'En ligne'; status.style.color = 'var(--accent)'; }
+  } else {
+    document.getElementById('dom-live-temp').textContent = '--';
+    document.getElementById('dom-live-humi').textContent = '--';
+    if (status) { status.textContent = loadSensorConfig() ? 'Hors ligne' : 'Non configuré'; status.style.color = ''; }
+  }
 }
 
 async function loadSensorData() {
@@ -3412,12 +3566,30 @@ async function loadSensorData() {
       { signal: AbortSignal.timeout(5000) });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();
-    document.getElementById('sensor-temp').textContent = parseFloat(data.temperature).toFixed(1);
-    document.getElementById('sensor-humi').textContent = Math.round(data.humidity);
+    const temp = parseFloat(data.temperature).toFixed(1);
+    const humi = Math.round(data.humidity);
+    // Barre du haut
+    document.getElementById('sensor-temp').textContent = temp;
+    document.getElementById('sensor-humi').textContent = humi;
     document.getElementById('sensor-now').style.display = 'flex';
+    // Popup domotique
+    updateDomoticsLiveRow(temp, humi);
+    // Écran de veille
+    const intTemp = document.getElementById('ss-int-temp');
+    const intCard = document.getElementById('ss-int-card');
+    if (intTemp) intTemp.textContent = temp;
+    if (intCard) intCard.style.display = 'flex';
+    updateScreensaverTempsRow();
   } catch(e) {
     console.warn('Capteur DHT22 inaccessible:', e.message);
+    updateDomoticsLiveRow(null, null);
   }
+}
+
+function updateScreensaverTempsRow() {
+  const row = document.getElementById('ss-temps-row');
+  if (!row) return;
+  if (state.weatherData) row.classList.add('visible');
 }
 
 function startSensorPolling() {
@@ -3429,6 +3601,44 @@ function startSensorPolling() {
 
 function stopSensorPolling() {
   if (sensorTimer) { clearInterval(sensorTimer); sensorTimer = null; }
+}
+
+// ═══════════════════════════════════════════
+//   POPUP DOMOTIQUE
+// ═══════════════════════════════════════════
+function toggleDomoticsPopup() {
+  const popup = document.getElementById('dom-popup');
+  if (popup.classList.contains('open')) {
+    closeDomoticsPopup();
+  } else {
+    openDomoticsPopup();
+  }
+}
+
+function openDomoticsPopup() {
+  const sensorCfg = loadSensorConfig();
+  const ipInput = document.getElementById('dom-sensor-ip');
+  if (ipInput) ipInput.value = sensorCfg ? sensorCfg.host : '';
+  const resultEl = document.getElementById('dom-sensor-result');
+  if (resultEl) { resultEl.textContent = ''; resultEl.className = 'ws-result'; }
+  // Mettre à jour la lecture en direct depuis les valeurs courantes
+  const curTemp = document.getElementById('sensor-temp')?.textContent;
+  const curHumi = document.getElementById('sensor-humi')?.textContent;
+  const isVisible = document.getElementById('sensor-now')?.style.display === 'flex';
+  if (isVisible && curTemp && curTemp !== '--') {
+    updateDomoticsLiveRow(curTemp, curHumi);
+  } else {
+    updateDomoticsLiveRow(null, null);
+  }
+  document.getElementById('dom-overlay').classList.add('open');
+  document.getElementById('dom-popup').classList.add('open');
+  document.getElementById('btn-domotics').classList.add('active');
+}
+
+function closeDomoticsPopup() {
+  document.getElementById('dom-overlay').classList.remove('open');
+  document.getElementById('dom-popup').classList.remove('open');
+  document.getElementById('btn-domotics').classList.remove('active');
 }
 
 async function searchWeatherCity() {
@@ -4681,6 +4891,12 @@ function updateScreensaverWeather() {
   document.getElementById('ss-weather-icon').textContent  = WMO_ICONS[code]  || '🌡️';
   document.getElementById('ss-weather-temp').textContent  = temp + '°C';
   document.getElementById('ss-weather-desc').textContent  = WMO_DESC[code]   || '';
+  // Carte température extérieure dans la rangée de températures
+  const extEl = document.getElementById('ss-ext-temp');
+  if (extEl) extEl.textContent = temp;
+  const extIcon = document.getElementById('ss-ext-icon');
+  if (extIcon) extIcon.textContent = WMO_ICONS[code] || '🌤️';
+  updateScreensaverTempsRow();
 }
 
 
