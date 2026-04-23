@@ -1133,46 +1133,53 @@
 
     /* Météo */
     #ss-weather {
-      margin-top: min(5vh, 32px);
-      display: flex; align-items: center; justify-content: center; gap: 16px;
+      margin-top: min(4vh, 26px);
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
     }
-    #ss-weather-icon { font-size: min(10vw, 9vh); line-height: 1; }
-    #ss-weather-right {}
-    #ss-weather-temp {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: min(12vw, 11vh); font-weight: 300; line-height: 1;
-      letter-spacing: -2px;
-    }
+    #ss-weather-icon { font-size: min(7vw, 6.5vh); line-height: 1; }
+    #ss-weather-temp { display: none; }
     #ss-weather-desc {
-      font-size: min(3.5vw, 3vh); color: rgba(255,255,255,.75);
-      margin-top: 4px;
+      font-size: min(3vw, 2.6vh); color: rgba(255,255,255,.6);
+      letter-spacing: .05em;
     }
 
-    /* Températures intérieure/extérieure sur la veille */
+    /* Températures extérieure / intérieure sur la veille */
     #ss-temps-row {
       display: none;
-      align-items: center; justify-content: center; gap: 20px;
+      align-items: stretch; justify-content: center;
       margin-top: min(2.5vh, 18px);
     }
     #ss-temps-row.visible { display: flex; }
-    .ss-temp-card {
-      display: flex; align-items: center; gap: 10px;
-      background: rgba(0,0,0,.45); backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,255,255,.15); border-radius: 14px;
-      padding: 10px 18px;
+    .ss-temp-block {
+      display: flex; flex-direction: column; align-items: center;
+      padding: 0 min(5.5vw, 44px);
     }
-    .ss-temp-card-icon { font-size: min(4vw, 2rem); line-height: 1; flex-shrink: 0; }
-    .ss-temp-card-val {
+    .ss-temp-val {
       font-family: 'Cormorant Garamond', serif;
-      font-size: min(6vw, 3.2rem); font-weight: 300; line-height: 1;
-      letter-spacing: -1px; color: #fff;
+      font-size: min(11vw, 9.5vh); font-weight: 300; line-height: 1;
+      letter-spacing: -2px; color: #fff;
     }
-    .ss-temp-card-label {
-      font-size: min(2vw, 0.78rem); color: rgba(255,255,255,.55); margin-top: 2px;
+    .ss-temp-humi {
+      font-size: 38%; font-weight: 300;
+      color: rgba(255,255,255,.5); letter-spacing: 0;
     }
-    .ss-temp-card-humi {
-      font-size: 55%; font-weight: 300; color: rgba(255,255,255,.75); letter-spacing: 0;
+    .ss-temp-lbl {
+      font-size: min(1.8vw, 0.72rem);
+      color: rgba(255,255,255,.38);
+      text-transform: uppercase; letter-spacing: .15em;
+      margin-top: 7px;
     }
+    .ss-temp-divider {
+      width: 1px; flex-shrink: 0; align-self: stretch;
+      background: linear-gradient(to bottom,
+        transparent 0%,
+        rgba(255,255,255,.28) 25%,
+        rgba(255,255,255,.28) 75%,
+        transparent 100%);
+      margin: 2px 0;
+    }
+    .ss-temp-clickable { cursor: pointer; transition: opacity .18s; }
+    .ss-temp-clickable:hover { opacity: .72; }
 
     /* Hint discret */
     #ss-hint {
@@ -1563,7 +1570,11 @@
 
     <!-- Capteur intérieur DHT22 / ESP8266 -->
     <div class="sensor-now" id="sensor-now">
-      <span class="sensor-icon">🏠</span>
+      <span class="sensor-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:1.45rem;height:1.45rem;display:block">
+          <path d="M3 10.5L12 3l9 7.5V21H15v-6H9v6H3V10.5z"/>
+        </svg>
+      </span>
       <div>
         <div class="sensor-temps">
           <span id="sensor-temp">--</span><span class="sensor-unit">°</span>
@@ -1578,7 +1589,11 @@
     <div class="btn-actions-group">
 
     <!-- Bouton Domotique -->
-    <button class="btn-domotics" id="btn-domotics" onclick="toggleDomoticsPopup()" title="Domotique">🏠</button>
+    <button class="btn-domotics" id="btn-domotics" onclick="toggleDomoticsPopup()" title="Domotique">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:1.4rem;height:1.4rem">
+        <path d="M3 10.5L12 3l9 7.5V21H15v-6H9v6H3V10.5z"/>
+      </svg>
+    </button>
 
     <!-- Bouton Spotify -->
     <button class="btn-spotify" id="btn-spotify" onclick="toggleSpotifyPopup()" title="Spotify">🎵</button>
@@ -1630,7 +1645,11 @@
   <div class="domotics-overlay" id="dom-overlay" onclick="closeDomoticsPopup()"></div>
   <div class="domotics-popup" id="dom-popup">
     <div class="dom-header">
-      <div class="dom-title"><span class="dom-title-icon">🏠</span> Domotique</div>
+      <div class="dom-title"><span class="dom-title-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:1.2rem;height:1.2rem;display:block">
+          <path d="M3 10.5L12 3l9 7.5V21H15v-6H9v6H3V10.5z"/>
+        </svg>
+      </span> Domotique</div>
       <button class="dom-close" onclick="closeDomoticsPopup()">✕</button>
     </div>
     <div class="dom-body">
@@ -1746,25 +1765,19 @@
       <div id="ss-date">—</div>
       <div id="ss-weather">
         <div id="ss-weather-icon">🌡️</div>
-        <div id="ss-weather-right">
-          <div id="ss-weather-temp">—°</div>
-          <div id="ss-weather-desc">—</div>
-        </div>
+        <div id="ss-weather-desc">—</div>
       </div>
-      <!-- Températures extérieure + intérieure -->
+      <!-- Températures extérieure + intérieure — même ligne, épuré -->
       <div id="ss-temps-row">
-        <div class="ss-temp-card">
-          <span class="ss-temp-card-icon" id="ss-ext-icon">🌤️</span>
-          <div>
-            <div class="ss-temp-card-val"><span id="ss-ext-temp">--</span>°</div>
-            <div class="ss-temp-card-label">Extérieur</div>
-          </div>
+        <div class="ss-temp-block">
+          <div class="ss-temp-val"><span id="ss-ext-temp">--</span>°</div>
+          <div class="ss-temp-lbl">Extérieur</div>
         </div>
-        <div class="ss-temp-card" id="ss-int-card" style="display:none">
-          <span class="ss-temp-card-icon">🏠</span>
-          <div>
-            <div class="ss-temp-card-val"><span id="ss-int-temp">--</span>°<span class="ss-temp-card-humi"> · <span id="ss-int-humi">--</span>%</span></div>
-            <div class="ss-temp-card-label">Intérieur</div>
+        <div id="ss-int-card" style="display:none; align-items:stretch">
+          <div class="ss-temp-divider"></div>
+          <div class="ss-temp-block ss-temp-clickable" onclick="openDomoticsFromSS(event)">
+            <div class="ss-temp-val"><span id="ss-int-temp">--</span>°<span class="ss-temp-humi"> <span id="ss-int-humi">--</span>%</span></div>
+            <div class="ss-temp-lbl">Intérieur</div>
           </div>
         </div>
       </div>
@@ -4896,14 +4909,16 @@ function updateScreensaverWeather() {
   const temp = Math.round(cur.temperature_2m);
   const code = cur.weather_code;
   document.getElementById('ss-weather-icon').textContent  = WMO_ICONS[code]  || '🌡️';
-  document.getElementById('ss-weather-temp').textContent  = temp + '°C';
   document.getElementById('ss-weather-desc').textContent  = WMO_DESC[code]   || '';
-  // Carte température extérieure dans la rangée de températures
   const extEl = document.getElementById('ss-ext-temp');
   if (extEl) extEl.textContent = temp;
-  const extIcon = document.getElementById('ss-ext-icon');
-  if (extIcon) extIcon.textContent = WMO_ICONS[code] || '🌤️';
   updateScreensaverTempsRow();
+}
+
+function openDomoticsFromSS(e) {
+  e.stopPropagation();
+  wakeUp();
+  setTimeout(openDomoticsPopup, 200);
 }
 
 
