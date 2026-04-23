@@ -3586,7 +3586,9 @@ async function loadSensorData() {
     if (intCard) intCard.style.display = 'flex';
     updateScreensaverTempsRow();
   } catch(e) {
-    console.warn('Capteur DHT22 inaccessible:', e.message);
+    console.error('[Capteur] Échec fetch', `http://${loadSensorConfig()?.host}/`, '—', e.message);
+    const resultEl = document.getElementById('dom-sensor-result');
+    if (resultEl && resultEl.textContent === '') resultEl.textContent = 'Erreur : ' + e.message;
     updateDomoticsLiveRow(null, null);
   }
 }
