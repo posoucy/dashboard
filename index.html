@@ -1170,6 +1170,9 @@
     .ss-temp-card-label {
       font-size: min(2vw, 0.78rem); color: rgba(255,255,255,.55); margin-top: 2px;
     }
+    .ss-temp-card-humi {
+      font-size: 55%; font-weight: 300; color: rgba(255,255,255,.75); letter-spacing: 0;
+    }
 
     /* Hint discret */
     #ss-hint {
@@ -1760,7 +1763,7 @@
         <div class="ss-temp-card" id="ss-int-card" style="display:none">
           <span class="ss-temp-card-icon">🏠</span>
           <div>
-            <div class="ss-temp-card-val"><span id="ss-int-temp">--</span>°</div>
+            <div class="ss-temp-card-val"><span id="ss-int-temp">--</span>°<span class="ss-temp-card-humi"> · <span id="ss-int-humi">--</span>%</span></div>
             <div class="ss-temp-card-label">Intérieur</div>
           </div>
         </div>
@@ -3562,7 +3565,7 @@ async function loadSensorData() {
   const config = loadSensorConfig();
   if (!config) return;
   try {
-    const resp = await fetch(`http://${config.host}/sensor`,
+    const resp = await fetch(`http://${config.host}/`,
       { signal: AbortSignal.timeout(5000) });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();
@@ -3576,8 +3579,10 @@ async function loadSensorData() {
     updateDomoticsLiveRow(temp, humi);
     // Écran de veille
     const intTemp = document.getElementById('ss-int-temp');
+    const intHumi = document.getElementById('ss-int-humi');
     const intCard = document.getElementById('ss-int-card');
     if (intTemp) intTemp.textContent = temp;
+    if (intHumi) intHumi.textContent = humi;
     if (intCard) intCard.style.display = 'flex';
     updateScreensaverTempsRow();
   } catch(e) {
