@@ -37,7 +37,7 @@ const char* WIFI_SSID = "VOTRE_SSID";        // Nom de votre réseau WiFi
 const char* WIFI_PASS = "VOTRE_MOT_DE_PASSE"; // Mot de passe WiFi
 const char* HOSTNAME  = "sensor";             // → http://sensor.local/sensor
 
-#define DHTPIN  D4      // Broche DATA du DHT22 (GPIO2)
+#define DHTPIN  D2      // Broche DATA du DHT22 (GPIO2)
 #define DHTTYPE DHT22   // Capteur DHT22 (AM2302)
 // ═══════════════════════════════════════════════
 
