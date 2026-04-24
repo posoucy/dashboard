@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Mon Calendrier</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <!-- Google Identity Services — remplacement officiel du flux implicite OAuth.
+       Permet le renouvellement silencieux du token sans iframe (bloqué par X-Frame-Options). -->
+  <script src="https://accounts.google.com/gsi/client" async></script>
   <style>
     :root {
       --bg:        #000000;
@@ -2103,7 +2106,6 @@ let state = {
 };
 
 let refreshTimer = null;
-let _silentRefreshCleanup = null;
 
 // Collections d'émojis par catégorie — 16 par collection (2 rangées de 8)
 const EMOJI_COLLECTIONS = [
@@ -2324,16 +2326,6 @@ function loadGoogleAPI() {
 // ─────────────────────────────────────────
 async function checkAuthOnLoad() {
 
-  // ── Dans un iframe (refresh silencieux) : envoyer le résultat via postMessage ──
-  if (window !== window.top) {
-    const fromHash = parseHashFromGoogle();
-    if (fromHash) {
-      clearUrlHash();
-      try { window.parent.postMessage({ type: 'silentRefreshResult', ...fromHash }, window.location.origin); } catch(e) {}
-    }
-    return;
-  }
-
   // ── Cas 0 : Code Spotify dans l'URL ?
   const spotifyAuthed = await checkSpotifyHashToken();
   if (spotifyAuthed) {
@@ -2365,7 +2357,7 @@ async function checkAuthOnLoad() {
     return;
   }
 
-  // ── Cas 3 : Token expiré → refresh silencieux via iframe (sans redirection de page)
+  // ── Cas 3 : Token expiré → refresh silencieux via GIS (sans redirection de page)
   if (saved && saved.expired) {
     // Afficher le cache et les événements locaux immédiatement
     const cached = loadEventsCache();
@@ -2387,37 +2379,36 @@ async function checkAuthOnLoad() {
   // ── Cas 4 : Aucune session → afficher l'écran de connexion
 }
 
-// Refresh silencieux via iframe au démarrage (token expiré, pas de redirection de page)
+// Refresh silencieux via GIS au démarrage (token expiré, sans redirection de page)
+// L'ancienne approche iframe est bloquée par X-Frame-Options: DENY sur accounts.google.com.
+// GIS utilise une fenêtre popup (non bloquée) et gère les sessions OAuth correctement.
 function silentRefreshAtStartup() {
-  const url = buildOAuthUrl('none');
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;';
-  iframe.src = url;
-  document.body.appendChild(iframe);
-
-  const cleanup = () => {
-    window.removeEventListener('message', onMessage);
-    clearTimeout(timeoutId);
-    try { document.body.removeChild(iframe); } catch(e) {}
-  };
-
-  const onMessage = async (event) => {
-    if (event.origin !== window.location.origin) return;
-    if (!event.data || event.data.type !== 'silentRefreshResult') return;
-    cleanup();
-    if (event.data.token) {
-      saveSession(event.data.token, event.data.expiresIn || 3599);
-      await connectWithToken(event.data.token, false);
-    } else {
-      showToast('Session expirée — veuillez vous reconnecter', 'error');
-    }
-  };
-  window.addEventListener('message', onMessage);
-
-  const timeoutId = setTimeout(() => {
-    cleanup();
+  if (!window.google?.accounts?.oauth2 || !GOOGLE_CONFIG.clientId) {
+    // GIS pas encore chargé — réessayer dans 1 seconde
+    setTimeout(silentRefreshAtStartup, 1000);
+    return;
+  }
+  try {
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id:      GOOGLE_CONFIG.clientId,
+      scope:          GOOGLE_CONFIG.scopes,
+      prompt:         '',
+      callback: async (response) => {
+        if (response.error || !response.access_token) {
+          showToast('Session expirée — veuillez vous reconnecter', 'error');
+          return;
+        }
+        saveSession(response.access_token, response.expires_in || 3599);
+        await connectWithToken(response.access_token, false);
+      },
+      error_callback: () => {
+        showToast('Session expirée — veuillez vous reconnecter', 'error');
+      },
+    });
+    tokenClient.requestAccessToken({ prompt: '' });
+  } catch(e) {
     showToast('Session expirée — veuillez vous reconnecter', 'error');
-  }, 30000);
+  }
 }
 
 // Connecter avec un token (déjà validé ou frais)
@@ -2464,51 +2455,56 @@ async function connectWithToken(token, isNewToken) {
   scheduleTokenRefresh();
 }
 
-// ── Refresh silencieux via iframe (ne vide PAS la page) ──
+// ── Refresh silencieux via GIS (ne vide PAS la page) ──
+// L'ancienne approche iframe est bloquée par X-Frame-Options: DENY sur accounts.google.com
+// et par le blocage des cookies tiers dans les navigateurs modernes.
+// GIS (Google Identity Services) contourne ces restrictions avec son propre mécanisme.
 function silentRefreshInBackground() {
   if (state._refreshing) return;
   state._refreshing = true;
   setDisconnected(true, 'Reconnexion…');
 
-  const url = buildOAuthUrl('none');
-  const iframe = document.createElement('iframe');
-  iframe.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;';
-  iframe.src = url;
-  document.body.appendChild(iframe);
-
-  const cleanup = () => {
-    window.removeEventListener('message', onMessage);
-    clearTimeout(timeoutId);
-    try { document.body.removeChild(iframe); } catch(e) {}
+  if (!window.google?.accounts?.oauth2 || !GOOGLE_CONFIG.clientId) {
+    // GIS pas encore chargé — réessayer dans 5 secondes
     state._refreshing = false;
-    _silentRefreshCleanup = null;
-  };
-  _silentRefreshCleanup = cleanup;
+    setTimeout(() => silentRefreshInBackground(), 5000);
+    return;
+  }
 
-  const onMessage = async (event) => {
-    if (event.origin !== window.location.origin) return;
-    if (!event.data || event.data.type !== 'silentRefreshResult') return;
-    cleanup();
-    const { token, expiresIn } = event.data;
-    if (token) {
-      saveSession(token, expiresIn || 3599);
-      state.accessToken = token;
-      setDisconnected(false);
-      await syncLocalEventsToGoogle();
-      fetchAllEvents().then(renderCalendar);
-      scheduleTokenRefresh();
-    } else {
-      setDisconnected(true, 'Déconnecté');
-      setTimeout(() => silentRefreshInBackground(), 5 * 60 * 1000);
-    }
+  const onSuccess = async (token, expiresIn) => {
+    state._refreshing = false;
+    saveSession(token, expiresIn || 3599);
+    state.accessToken = token;
+    setDisconnected(false);
+    await syncLocalEventsToGoogle();
+    fetchAllEvents().then(renderCalendar);
+    scheduleTokenRefresh();
   };
-  window.addEventListener('message', onMessage);
 
-  const timeoutId = setTimeout(() => {
-    cleanup();
+  const onFailure = () => {
+    state._refreshing = false;
     setDisconnected(true, 'Déconnecté');
     setTimeout(() => silentRefreshInBackground(), 5 * 60 * 1000);
-  }, 30000);
+  };
+
+  try {
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id:      GOOGLE_CONFIG.clientId,
+      scope:          GOOGLE_CONFIG.scopes,
+      prompt:         '',
+      callback: (response) => {
+        if (response.error || !response.access_token) {
+          onFailure();
+        } else {
+          onSuccess(response.access_token, response.expires_in);
+        }
+      },
+      error_callback: () => onFailure(),
+    });
+    tokenClient.requestAccessToken({ prompt: '' });
+  } catch(e) {
+    onFailure();
+  }
 }
 
 // Programmer un refresh automatique 5 min avant expiration
