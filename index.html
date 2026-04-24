@@ -2380,34 +2380,55 @@ async function checkAuthOnLoad() {
 }
 
 // Refresh silencieux via GIS au démarrage (token expiré, sans redirection de page)
-// L'ancienne approche iframe est bloquée par X-Frame-Options: DENY sur accounts.google.com.
-// GIS utilise une fenêtre popup (non bloquée) et gère les sessions OAuth correctement.
 function silentRefreshAtStartup() {
   if (!window.google?.accounts?.oauth2 || !GOOGLE_CONFIG.clientId) {
-    // GIS pas encore chargé — réessayer dans 1 seconde
     setTimeout(silentRefreshAtStartup, 1000);
     return;
   }
+
+  console.log('[Auth] silentRefreshAtStartup — GIS disponible, tentative...');
+
+  let resolved = false;
+  const safetyTimeout = setTimeout(() => {
+    if (resolved) return;
+    resolved = true;
+    console.error('[Auth] silentRefreshAtStartup — timeout 20s, GIS ne répond pas');
+    showToast('Reconnexion échouée: GIS ne répond pas (popup bloquée?)', 'error');
+  }, 20000);
+
   try {
     const tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id:      GOOGLE_CONFIG.clientId,
-      scope:          GOOGLE_CONFIG.scopes,
-      prompt:         '',
+      client_id:  GOOGLE_CONFIG.clientId,
+      scope:      GOOGLE_CONFIG.scopes,
+      prompt:     'none',
       callback: async (response) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(safetyTimeout);
+        console.log('[Auth] GIS callback startup — error:', response.error, '| token:', !!response.access_token);
         if (response.error || !response.access_token) {
-          showToast('Session expirée — veuillez vous reconnecter', 'error');
+          showToast('Session expirée (' + (response.error || 'no_token') + ') — reconnexion requise', 'error');
           return;
         }
         saveSession(response.access_token, response.expires_in || 3599);
         await connectWithToken(response.access_token, false);
       },
-      error_callback: () => {
-        showToast('Session expirée — veuillez vous reconnecter', 'error');
+      error_callback: (err) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(safetyTimeout);
+        console.error('[Auth] GIS error_callback startup — type:', err?.type, err?.message);
+        showToast('Session expirée (' + (err?.type || 'error_callback') + ') — reconnexion requise', 'error');
       },
     });
-    tokenClient.requestAccessToken({ prompt: '' });
+    tokenClient.requestAccessToken({ prompt: 'none' });
+    console.log('[Auth] requestAccessToken appelé (startup)...');
   } catch(e) {
-    showToast('Session expirée — veuillez vous reconnecter', 'error');
+    if (resolved) return;
+    resolved = true;
+    clearTimeout(safetyTimeout);
+    console.error('[Auth] GIS exception startup:', e.message);
+    showToast('Session expirée (exception: ' + e.message + ') — reconnexion requise', 'error');
   }
 }
 
@@ -2456,22 +2477,36 @@ async function connectWithToken(token, isNewToken) {
 }
 
 // ── Refresh silencieux via GIS (ne vide PAS la page) ──
-// L'ancienne approche iframe est bloquée par X-Frame-Options: DENY sur accounts.google.com
-// et par le blocage des cookies tiers dans les navigateurs modernes.
-// GIS (Google Identity Services) contourne ces restrictions avec son propre mécanisme.
 function silentRefreshInBackground() {
   if (state._refreshing) return;
   state._refreshing = true;
   setDisconnected(true, 'Reconnexion…');
 
   if (!window.google?.accounts?.oauth2 || !GOOGLE_CONFIG.clientId) {
-    // GIS pas encore chargé — réessayer dans 5 secondes
+    console.warn('[Auth] silentRefreshInBackground — GIS non chargé, réessai dans 5s');
     state._refreshing = false;
     setTimeout(() => silentRefreshInBackground(), 5000);
     return;
   }
 
+  console.log('[Auth] silentRefreshInBackground — démarrage GIS...');
+
+  let resolved = false;
+  const safetyTimeout = setTimeout(() => {
+    if (resolved) return;
+    resolved = true;
+    console.error('[Auth] silentRefreshInBackground — timeout 20s, GIS ne répond pas (popup bloquée?)');
+    state._refreshing = false;
+    setDisconnected(true, 'Déconnecté');
+    showToast('Reconnexion échouée: GIS ne répond pas (popup bloquée?)', 'error');
+    setTimeout(() => silentRefreshInBackground(), 5 * 60 * 1000);
+  }, 20000);
+
   const onSuccess = async (token, expiresIn) => {
+    if (resolved) return;
+    resolved = true;
+    clearTimeout(safetyTimeout);
+    console.log('[Auth] GIS refresh réussi — nouveau token reçu');
     state._refreshing = false;
     saveSession(token, expiresIn || 3599);
     state.accessToken = token;
@@ -2481,29 +2516,40 @@ function silentRefreshInBackground() {
     scheduleTokenRefresh();
   };
 
-  const onFailure = () => {
+  const onFailure = (reason) => {
+    if (resolved) return;
+    resolved = true;
+    clearTimeout(safetyTimeout);
+    console.error('[Auth] GIS refresh échoué:', reason);
     state._refreshing = false;
     setDisconnected(true, 'Déconnecté');
+    showToast('Reconnexion échouée: ' + reason, 'error');
     setTimeout(() => silentRefreshInBackground(), 5 * 60 * 1000);
   };
 
   try {
     const tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id:      GOOGLE_CONFIG.clientId,
-      scope:          GOOGLE_CONFIG.scopes,
-      prompt:         '',
+      client_id:  GOOGLE_CONFIG.clientId,
+      scope:      GOOGLE_CONFIG.scopes,
+      prompt:     'none',
       callback: (response) => {
+        console.log('[Auth] GIS callback — error:', response.error, '| token:', !!response.access_token);
         if (response.error || !response.access_token) {
-          onFailure();
+          onFailure(response.error || 'no_token');
         } else {
           onSuccess(response.access_token, response.expires_in);
         }
       },
-      error_callback: () => onFailure(),
+      error_callback: (err) => {
+        console.error('[Auth] GIS error_callback — type:', err?.type, '| message:', err?.message);
+        onFailure(err?.type || 'error_callback');
+      },
     });
-    tokenClient.requestAccessToken({ prompt: '' });
+    tokenClient.requestAccessToken({ prompt: 'none' });
+    console.log('[Auth] requestAccessToken appelé, en attente de réponse GIS...');
   } catch(e) {
-    onFailure();
+    console.error('[Auth] GIS exception:', e.message);
+    onFailure('exception: ' + e.message);
   }
 }
 
@@ -4960,6 +5006,15 @@ function updateScreensaverPhoto() {
 function init() {
   renderCalendar();
   loadGoogleAPI();
+  // Vérifier que GIS se charge correctement dans les 10 premières secondes
+  setTimeout(() => {
+    if (!window.google?.accounts?.oauth2) {
+      console.error('[Auth] GIS non chargé après 10s — vérifier la connexion réseau ou le bloqueur de scripts');
+      showToast('Erreur: GIS non chargé (scripts bloqués?)', 'error');
+    } else {
+      console.log('[Auth] GIS chargé correctement');
+    }
+  }, 10000);
   updateClock();
   setInterval(updateClock, 30000);
   loadWeather();
